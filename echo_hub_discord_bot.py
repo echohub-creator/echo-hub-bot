@@ -26,8 +26,7 @@ def load_vendor_directory():
       if os.path.exists(VENDOR_FILE):
                 with open(VENDOR_FILE, "r") as f:
                               return json.load(f)
-                      return {}
-
+    return {}
   @bot.event
 async def on_ready():
       print(f"Echo Hub Bot logged in as {bot.user} (ID: {bot.user.id})")
