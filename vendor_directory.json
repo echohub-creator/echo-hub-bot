@@ -1,0 +1,8 @@
+{
+    "vendors": {
+          "vendor_id_123": {
+                  "role_id": "DISCORD_ROLE_ID_HERE",
+                  "name": "Sample Vendor"
+          }
+    }
+}
