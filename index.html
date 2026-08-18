@@ -297,7 +297,7 @@ const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/153909772238298332
 
 // Initialize Supabase Client
 const { createClient } = window.supabase;
-const supabase = createClient(h, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // PII Regex Patterns for validation
 const piiPatterns = {
