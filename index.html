@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+h<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -358,14 +358,10 @@ return;
 
 try {
 // Send to Supabase using SDK
-const { data, error } = await supabase.from('listings').insert([{
-title: `Buyer Inquiry from ${buyerId}`,
-description: message,
-category: 'Inquiry',
-price: 0,
-condition: 'Inquiry',
-status: 'active',
-vendor_id: vendorId
+const { data, error } = await supabase.from('inquiries').insert([{
+buyer_id: buyerId,
+  				vendor_id: vendorId,
+  				inquiry: message
 }]);
 
 if (error) {
