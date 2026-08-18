@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Hub Blind-Broker System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .listings {
+            display: grid;
+            gap: 15px;
+        }
+        .listing {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f9f9f9;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .listing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .listing h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .listing-price {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #764ba2;
+            margin: 10px 0;
+        }
+        .listing-desc {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .listing-meta {
+            font-size: 0.8em;
+            color: #999;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 20px;
+        }
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        .nav-tabs button {
+            background: none;
+            border: none;
+            color: #667eea;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+        .nav-tabs button.active {
+            color: #764ba2;
+            border-bottom-color: #764ba2;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Echo Hub Blind-Broker System</h1>
+            <p>Anonymous Buyer-Vendor Marketplace</p>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <div class="nav-tabs">
+                    <button class="nav-btn active" data-tab="buyer">Buyer</button>
+                    <button class="nav-btn" data-tab="vendor">Vendor</button>
+                </div>
+
+                <div id="buyer-form" class="tab-content active">
+                    <h2>📋 Buyer Inquiry</h2>
+                    <div class="error" id="buyerError"></div>
+                    <div class="success" id="buyerSuccess"></div>
+
+                    <form id="buyerForm">
+                        <div class="form-group">
+                            <label for="buyerVendorId">Vendor Unique ID</label>
+                            <input type="text" id="buyerVendorId" placeholder="Enter vendor ID" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerId">Your Buyer ID (Anonymous)</label>
+                            <input type="text" id="buyerId" placeholder="Auto-generated anonymous ID" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerMessage">Your Inquiry</label>
+                            <textarea id="buyerMessage" placeholder="Describe your request..." required></textarea>
+                        </div>
+
+                        <button type="submit">Submit Inquiry</button>
+                    </form>
+                </div>
+
+                <div id="vendor-form" class="tab-content">
+                    <h2>📦 Post Listing</h2>
+                    <div class="error" id="vendorError"></div>
+                    <div class="success" id="vendorSuccess"></div>
+
+                    <form id="vendorForm">
+                        <div class="form-group">
+                            <label for="vendorId">Your Vendor ID (Anonymous)</label>
+                            <input type="text" id="vendorId" placeholder="Auto-generated anonymous ID" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="title">Product Title</label>
+                            <input type="text" id="title" placeholder="What are you selling?" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" required>
+                                <option value="">Select a category</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Clothing">Clothing</option>
+                                <option value="Books">Books</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Price ($)</label>
+                            <input type="number" id="price" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" placeholder="Describe your product..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="condition">Condition</label>
+                            <select id="condition" required>
+                                <option value="">Select condition</option>
+                                <option value="New">New</option>
+                                <option value="Like New">Like New</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Used">Used</option>
+                            </select>
+                        </div>
+
+                        <button type="submit">Post Listing</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 Live Listings</h2>
+                <div id="listings" class="listings">
+                    <div class="loading">Loading listings...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - sb_publishable_n7i4MLVbZEbYbs3auKa3mQ_AzGM1OJrg9YxFMEF6wXrZEeHDjwNXSh8 and https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5 will be replaced during deployment
+        const SUPABASE_URL = 'https://egrqtvpptkvvnckjzfj.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_n7i4MLVbZEbYbs3auKa3mQ_AzGM1OJrg9YxFMEF6wXrZEeHDjwNXSh8';
+        const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
+
+        // PII Regex Patterns for validation
+        const piiPatterns = {
+            email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+            phone: /(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|[0-9]{10})/g,
+            url: /(https?:\/\/[^\s]+|www\.[^\s]+)/gi,
+            socialMedia: /[@#](username|handle|user|account|profile)/gi,
+            ipAddress: /(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/g
+        };
+
+        // PII Validation (The Bouncer)
+        function validatePII(text) {
+            const violations = [];
+
+            if (piiPatterns.email.test(text)) violations.push('Email addresses');
+            if (piiPatterns.phone.test(text)) violations.push('Phone numbers');
+            if (piiPatterns.url.test(text)) violations.push('URLs');
+            if (piiPatterns.socialMedia.test(text)) violations.push('Social media handles');
+            if (piiPatterns.ipAddress.test(text)) violations.push('IP addresses');
+
+            return violations;
+        }
+
+        // Generate anonymous ID
+        function generateAnonymousId() {
+            return 'ID' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        }
+
+        // Initialize
+        document.getElementById('buyerId').value = generateAnonymousId();
+        document.getElementById('vendorId').value = generateAnonymousId();
+
+        // Tab navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.target.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(tab + '-form').classList.add('active');
+                e.target.classList.add('active');
+            });
+        });
+
+        // Form submission handlers
+        document.getElementById('buyerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const vendorId = document.getElementById('buyerVendorId').value;
+            const buyerId = document.getElementById('buyerId').value;
+            const message = document.getElementById('buyerMessage').value;
+
+            // PII Check
+            const piiIssues = validatePII(message);
+            if (piiIssues.length > 0) {
+                showError('buyerError', 'Invalid input detected: ' + piiIssues.join(', ') + '. Please remove personal information.');
+                return;
+            }
+
+            try {
+                // Send to Supabase
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/listings`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY
+                    },
+                    body: JSON.stringify({
+                        title: `Buyer Inquiry from ${buyerId}`,
+                        description: message,
+                        category: 'Inquiry',
+                        price: 0,
+                        condition: 'Inquiry',
+                        status: 'active'
+                    })
+                });
+
+                if (response.ok) {
+                    // Send Discord notification
+                    await fetch(DISCORD_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: `🔔 New buyer inquiry from ${buyerId}`,
+                            embeds: [{
+                                title: 'Buyer Inquiry',
+                                description: message,
+                                fields: [
+                                    { name: 'Buyer ID', value: buyerId, inline: true },
+                                    { name: 'Vendor ID', value: vendorId, inline: true }
+                                ],
+                                color: 3447003
+                            }]
+                        })
+                    }).catch(() => {});
+
+                    showSuccess('buyerSuccess', 'Inquiry submitted successfully!');
+                    document.getElementById('buyerForm').reset();
+                    document.getElementById('buyerId').value = generateAnonymousId();
+                    setTimeout(loadListings, 1000);
+                } else {
+                    showError('buyerError', 'Error submitting inquiry. Please try again.');
+                }
+            } catch (error) {
+                showError('buyerError', 'Network error: ' + error.message);
+            }
+        });
+
+        document.getElementById('vendorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const category = document.getElementById('category').value;
+            const price = document.getElementById('price').value;
+            const description = document.getElementById('description').value;
+            const condition = document.getElementById('condition').value;
+            const vendorId = document.getElementById('vendorId').value;
+
+            // PII Check on all fields
+            const allText = `${title} ${description}`;
+            const piiIssues = validatePII(allText);
+            if (piiIssues.length > 0) {
+                showError('vendorError', 'Invalid input detected: ' + piiIssues.join(', ') + '. Please remove personal information.');
+                return;
+            }
+
+            try {
+                // Send to Supabase
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/listings`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        category: category,
+                        price: parseFloat(price),
+                        description: description,
+                        condition: condition,
+                        status: 'active'
+                    })
+                });
+
+                if (response.ok) {
+                    // Send Discord notification
+                    await fetch(DISCORD_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: `📦 New listing from ${vendorId}`,
+                            embeds: [{
+                                title: title,
+                                description: description,
+                                fields: [
+                                    { name: 'Price', value: `$${price}`, inline: true },
+                                    { name: 'Category', value: category, inline: true },
+                                    { name: 'Condition', value: condition, inline: true },
+                                    { name: 'Vendor ID', value: vendorId, inline: true }
+                                ],
+                                color: 65280
+                            }]
+                        })
+                    }).catch(() => {});
+
+                    showSuccess('vendorSuccess', 'Listing posted successfully!');
+                    document.getElementById('vendorForm').reset();
+                    document.getElementById('vendorId').value = generateAnonymousId();
+                    setTimeout(loadListings, 1000);
+                } else {
+                    showError('vendorError', 'Error posting listing. Please try again.');
+                }
+            } catch (error) {
+                showError('vendorError', 'Network error: ' + error.message);
+            }
+        });
+
+        // Load and display listings
+        async function loadListings() {
+            const listingsContainer = document.getElementById('listings');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/listings?order=created_at.desc&limit=50`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'apikey': SUPABASE_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const listings = await response.json();
+                    if (listings.length === 0) {
+                        listingsContainer.innerHTML = '<p>No listings yet. Be the first to post!</p>';
+                        return;
+                    }
+
+                    listingsContainer.innerHTML = listings.map(listing => `
+                        <div class="listing">
+                            <h3>${listing.title}</h3>
+                            <div class="listing-price">$${parseFloat(listing.price).toFixed(2)}</div>
+                            <div class="listing-desc">${listing.description}</div>
+                            <div class="listing-meta">
+                                Category: ${listing.category} | Condition: ${listing.condition} |
+                                Posted: ${new Date(listing.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listingsContainer.innerHTML = '<p>Unable to load listings. Please refresh.</p>';
+                }
+            } catch (error) {
+                listingsContainer.innerHTML = `<p>Error loading listings: ${error.message}</p>`;
+            }
+        }
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => { element.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => { element.style.display = 'none'; }, 3000);
+        }
+
+        // Load listings on page load and refresh every 10 seconds
+        loadListings();
+        setInterval(loadListings, 10000);
+    </script>
+</body>
+</html>
