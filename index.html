@@ -364,6 +364,12 @@ e.target.classList.add('active');
 document.getElementById('buyerForm').addEventListener('submit', async (e) => {
 e.preventDefault();
 
+  // Check if supabase is initialized
+  if (!supabase) {
+    showError('buyerError', 'System is loading. Please wait and try again.');
+    return;
+  }
+
 const vendorId = document.getElementById('buyerVendorId').value;
 const buyerId = document.getElementById('buyerId').value;
 const message = document.getElementById('buyerMessage').value;
@@ -417,6 +423,12 @@ showError('buyerError', 'Network error: ' + error.message);
 
 document.getElementById('vendorForm').addEventListener('submit', async (e) => {
 e.preventDefault();
+
+  // Check if supabase is initialized
+  if (!supabase) {
+    showError('vendorError', 'System is loading. Please wait and try again.');
+    return;
+  }
 
 const title = document.getElementById('title').value;
 const category = document.getElementById('category').value;
