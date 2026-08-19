@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo Hub Vendor Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+body {
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f8 100%);
+background-attachment: fixed;
+min-height: 100vh;
+padding: 20px;
+animation: backgroundFade 0.8s ease-out;
+}
+@keyframes backgroundFade {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+.container {
+max-width: 1200px;
+margin: 0 auto;
+background: white;
+border-radius: 16px;
+box-shadow: 0 20px 60px rgba(30, 90, 168, 0.08);
+overflow: hidden;
+animation: containerSlideIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes containerSlideIn {
+from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}
+}
+header {
+background: linear-gradient(135deg, #1e5aa8 0%, #2e7bb4 100%);
+color: white;
+padding: 40px 30px;
+text-align: center;
+}
+header h1 {
+font-size: 2.5em;
+margin-bottom: 10px;
+}
+header p {
+font-size: 1.1em;
+opacity: 0.95;
+margin: 0;
+}
+.content {
+padding: 50px;
+}
+.vendor-info {
+background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+border: 2px solid #e1e8ed;
+border-radius: 12px;
+padding: 25px;
+margin-bottom: 30px;
+}
+.info-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 15px;
+}
+.info-label {
+font-weight: 600;
+color: #2c3e50;
+font-size: 0.95em;
+}
+.info-value {
+background: white;
+padding: 12px 16px;
+border-radius: 8px;
+border: 1px solid #e1e8ed;
+font-family: 'Courier New', monospace;
+color: #1e5aa8;
+font-weight: 500;
+flex: 1;
+margin-left: 15px;
+word-break: break-all;
+}
+.copy-btn {
+background: #1e5aa8;
+color: white;
+border: none;
+padding: 8px 12px;
+border-radius: 6px;
+cursor: pointer;
+font-size: 12px;
+font-weight: 600;
+margin-left: 10px;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.copy-btn:hover {
+background: #2e7bb4;
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(30, 90, 168, 0.25);
+}
+.inquiries-section h2 {
+color: #1e5aa8;
+margin-bottom: 25px;
+font-size: 1.6em;
+font-weight: 700;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.inquiry-card {
+border: 1px solid #e1e8ed;
+border-radius: 12px;
+padding: 22px;
+background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+position: relative;
+overflow: hidden;
+margin-bottom: 18px;
+animation: inquirySlideUp 0.6s ease-out forwards;
+opacity: 0;
+}
+@keyframes inquirySlideUp {
+from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}
+}
+.inquiry-card:nth-child(1) { animation-delay: 0.1s; }
+.inquiry-card:nth-child(2) { animation-delay: 0.15s; }
+.inquiry-card:nth-child(3) { animation-delay: 0.2s; }
+.inquiry-card:nth-child(4) { animation-delay: 0.25s; }
+.inquiry-card:nth-child(5) { animation-delay: 0.3s; }
+.inquiry-card::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 3px;
+background: linear-gradient(90deg, #1e5aa8 0%, #2e7bb4 100%);
+opacity: 0;
+transition: opacity 0.3s;
+}
+.inquiry-card:hover {
+transform: translateY(-8px) scale(1.01);
+box-shadow: 0 20px 48px rgba(30, 90, 168, 0.16);
+border-color: #1e5aa8;
+}
+.inquiry-card:hover::before {
+opacity: 1;
+}
+.inquiry-header {
+display: flex;
+justify-content: space-between;
+align-items: start;
+margin-bottom: 15px;
+}
+.buyer-id {
+color: #1e5aa8;
+font-weight: 700;
+font-size: 1.1em;
+}
+.timestamp {
+font-size: 0.85em;
+color: #8a95a1;
+}
+.inquiry-message {
+color: #555;
+font-size: 0.95em;
+line-height: 1.6;
+margin: 14px 0;
+padding: 12px;
+background: white;
+border-left: 3px solid #1e5aa8;
+border-radius: 4px;
+}
+.empty-state {
+text-align: center;
+padding: 60px 30px;
+color: #8a95a1;
+}
+.empty-icon {
+font-size: 48px;
+margin-bottom: 15px;
+}
+.empty-state p {
+font-size: 1.1em;
+margin-bottom: 10px;
+}
+.loading {
+text-align: center;
+color: #1e5aa8;
+padding: 30px;
+font-size: 15px;
+font-weight: 500;
+letter-spacing: 0.5px;
+}
+.error {
+color: #c0392b;
+background: #fadbd8;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+border-left: 4px solid #c0392b;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+}
+.success {
+color: #27ae60;
+background: #d5f4e6;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+border-left: 4px solid #27ae60;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+from { transform: translateY(-10px); opacity: 0; }
+to { transform: translateY(0); opacity: 1; }
+}
+@media (max-width: 768px) {
+header {
+padding: 30px 20px;
+}
+header h1 {
+font-size: 2em;
+}
+.content {
+padding: 30px 20px;
+}
+.info-row {
+flex-direction: column;
+align-items: flex-start;
+}
+.info-value {
+margin-left: 0;
+margin-top: 10px;
+}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Echo Hub Vendor Portal</h1>
+<p>Manage Your Inquiries Privately</p>
+</header>
+
+<div class="content">
+<div class="vendor-info">
+<div class="info-row">
+<span class="info-label">🆔 Your Vendor ID (Anonymous):</span>
+<span class="info-value" id="vendorId">Loading...</span>
+<button class="copy-btn" onclick="copyToClipboard()">Copy</button>
+</div>
+<div class="info-row" style="margin-bottom: 0;">
+<span class="info-label">📊 Total Inquiries:</span>
+<span class="info-value" id="inquiryCount">0</span>
+</div>
+</div>
+
+<div class="error" id="errorMessage" style="display: none;"></div>
+<div class="success" id="successMessage" style="display: none;"></div>
+
+<div class="inquiries-section">
+<h2>📬 Your Inquiries</h2>
+<div id="inquiries" class="inquiries-list">
+<div class="loading">Loading inquiries...</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+// Configuration
+const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
+
+let supabase = null;
+let currentVendorId = null;
+
+// Initialize Supabase
+function setupSupabase() {
+  if (!window.supabase || !window.supabase.createClient) {
+    console.log('Supabase library not ready, retrying...');
+    setTimeout(setupSupabase, 100);
+    return;
+  }
+
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase client initialized successfully');
+    initializeVendorPortal();
+  } catch (err) {
+    console.error('❌ Failed to initialize Supabase:', err.message);
+    showError('Failed to initialize Supabase connection');
+  }
+}
+
+// Generate or retrieve vendor ID
+function getOrCreateVendorId() {
+  let vendorId = localStorage.getItem('echo_hub_vendor_id');
+  if (!vendorId) {
+    vendorId = 'VENDOR_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    localStorage.setItem('echo_hub_vendor_id', vendorId);
+  }
+  return vendorId;
+}
+
+// Initialize vendor portal
+function initializeVendorPortal() {
+  currentVendorId = getOrCreateVendorId();
+  document.getElementById('vendorId').textContent = currentVendorId;
+
+  loadInquiries();
+
+  // Refresh every 10 seconds
+  setInterval(loadInquiries, 10000);
+}
+
+// Load inquiries for this vendor
+async function loadInquiries() {
+  const inquiriesContainer = document.getElementById('inquiries');
+
+  try {
+    if (!supabase) {
+      showError('Supabase connection not initialized');
+      return;
+    }
+
+    const { data: inquiries, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('vendor_id', currentVendorId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      showError('Error loading inquiries: ' + error.message);
+      console.error('Supabase error:', error);
+      return;
+    }
+
+    // Update inquiry count
+    document.getElementById('inquiryCount').textContent = inquiries ? inquiries.length : 0;
+
+    if (!inquiries || inquiries.length === 0) {
+      inquiriesContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>No inquiries yet</p>
+          <p style="font-size: 0.9em; margin: 0;">Share your vendor ID with potential buyers</p>
+        </div>
+      `;
+      return;
+    }
+
+    inquiriesContainer.innerHTML = inquiries.map(inquiry => `
+      <div class="inquiry-card">
+        <div class="inquiry-header">
+          <div class="buyer-id">Buyer: ${inquiry.buyer_id}</div>
+          <div class="timestamp">${new Date(inquiry.created_at).toLocaleDateString()}</div>
+        </div>
+        <div class="inquiry-message">${escapeHtml(inquiry.inquiry)}</div>
+      </div>
+    `).join('');
+  } catch (error) {
+    showError('Error: ' + error.message);
+    console.error('Error loading inquiries:', error);
+  }
+}
+
+// Copy vendor ID to clipboard
+function copyToClipboard() {
+  const vendorId = document.getElementById('vendorId').textContent;
+  navigator.clipboard.writeText(vendorId).then(() => {
+    showSuccess('Vendor ID copied to clipboard!');
+  }).catch(err => {
+    showError('Failed to copy: ' + err.message);
+  });
+}
+
+// Show error message
+function showError(message) {
+  const element = document.getElementById('errorMessage');
+  element.textContent = message;
+  element.style.display = 'block';
+  setTimeout(() => { element.style.display = 'none'; }, 5000);
+}
+
+// Show success message
+function showSuccess(message) {
+  const element = document.getElementById('successMessage');
+  element.textContent = message;
+  element.style.display = 'block';
+  setTimeout(() => { element.style.display = 'none'; }, 3000);
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Start initialization
+setupSupabase();
+setInterval(() => {
+  if (!supabase || typeof supabase.from !== 'function') {
+    setupSupabase();
+  }
+}, 500);
+</script>
+</body>
+</html>
