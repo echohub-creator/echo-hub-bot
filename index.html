@@ -550,12 +550,21 @@ return 'ID' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
 
 // Explicitly assign to window for guaranteed global access
-window.setupSupabase = setupSupabase;
-window.validatePII = validatePII;
-window.generateAnonymousId = generateAnonymousId;
+try {
+  window.setupSupabase = setupSupabase;
+  window.validatePII = validatePII;
+  window.generateAnonymousId = generateAnonymousId;
+  console.log('✅ Functions assigned to window successfully');
+} catch (err) {
+  console.error('❌ Error assigning functions to window:', err.message);
+}
 
-// Initialize
-document.getElementById('buyerId').value = generateAnonymousId();
+// Initialize with wrapped call
+try {
+  document.getElementById('buyerId').value = window.generateAnonymousId ? window.generateAnonymousId() : 'ID' + Math.random().toString(36).substr(2, 9);
+} catch (err) {
+  console.error('❌ Error during initialization:', err.message);
+}
 document.getElementById('vendorId').value = generateAnonymousId();
 
 // Tab navigation
