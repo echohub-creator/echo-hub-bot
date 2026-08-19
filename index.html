@@ -1,1 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo Hub Blind-Broker System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+body {
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f8 100%);
+background-attachment: fixed;
+min-height: 100vh;
+padding: 20px;
+animation: backgroundFade 0.8s ease-out;
+}
+@keyframes backgroundFade {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+.container {
+max-width: 1200px;
+margin: 0 auto;
+background: white;
+border-radius: 16px;
+box-shadow: 0 20px 60px rgba(30, 90, 168, 0.08);
+overflow: hidden;
+animation: containerSlideIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes containerSlideIn {
+from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}
+}
+header {
+background: linear-gradient(135deg, #1e5aa8 0%, #2e7bb4 100%);
+color: white;
+padding: 30px;
+text-align: center;
+}
+header h1 {
+font-size: 2.5em;
+margin-bottom: 5px;
+}
+header p {
+font-size: 1.1em;
+opacity: 0.95;
+margin: 0;
+}
+.content {
+padding: 50px;
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 50px;
+}
+.section {
+display: flex;
+flex-direction: column;
+}
+.section h2 {
+color: #1e5aa8;
+margin-bottom: 25px;
+font-size: 1.6em;
+font-weight: 700;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.form-group {
+margin-bottom: 22px;
+}
+label {
+display: block;
+margin-bottom: 8px;
+color: #2c3e50;
+font-weight: 600;
+font-size: 0.95em;
+letter-spacing: 0.3px;
+}
+input, textarea, select {
+width: 100%;
+padding: 12px 16px;
+border: 2px solid #e1e8ed;
+border-radius: 10px;
+font-family: inherit;
+font-size: 15px;
+transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+background: white;
+color: #2c3e50;
+}
+input::placeholder, textarea::placeholder {
+color: #a0aec0;
+}
+input:focus, textarea:focus, select:focus {
+outline: none;
+border-color: #1e5aa8;
+background: #f8fbff;
+box-shadow: 0 0 0 3px rgba(30, 90, 168, 0.08), inset 0 0 0 1px rgba(30, 90, 168, 0.04);
+transform: translateY(-2px);
+}
+input:hover, textarea:hover, select:hover {
+border-color: #2e7bb4;
+}
+input, textarea, select {
+background-image: linear-gradient(#f8fbff, #f8fbff);
+background-position: left bottom;
+background-repeat: no-repeat;
+background-size: 0 100%;
+background-origin: border-box;
+}
+input:focus, textarea:focus, select:focus {
+background-size: 100% 100%;
+}
+textarea {
+resize: vertical;
+min-height: 100px;
+font-family: inherit;
+}
+button {
+background: linear-gradient(135deg, #1e5aa8 0%, #2e7bb4 100%);
+color: white;
+padding: 14px 32px;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+font-size: 15px;
+font-weight: 600;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+position: relative;
+overflow: hidden;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+button::before {
+content: '';
+position: absolute;
+top: 50%;
+left: 50%;
+width: 0;
+height: 0;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.3);
+transform: translate(-50%, -50%);
+transition: width 0.6s, height 0.6s;
+}
+button:hover {
+transform: translateY(-3px);
+box-shadow: 0 12px 24px rgba(30, 90, 168, 0.25);
+}
+button:hover::before {
+width: 300px;
+height: 300px;
+}
+button:active {
+transform: translateY(-1px);
+}
+.error {
+color: #c0392b;
+background: #fadbd8;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+display: none;
+border-left: 4px solid #c0392b;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+}
+.success {
+color: #27ae60;
+background: #d5f4e6;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+display: none;
+border-left: 4px solid #27ae60;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+from { transform: translateY(-10px); opacity: 0; }
+to { transform: translateY(0); opacity: 1; }
+}
+@keyframes pulse {
+0%, 100% { box-shadow: 0 0 0 0 rgba(30, 90, 168, 0.7); }
+50% { box-shadow: 0 0 0 8px rgba(30, 90, 168, 0); }
+}
+@keyframes shimmer {
+0% { background-position: -1000px 0; }
+100% { background-position: 1000px 0; }
+}
+.listings {
+display: grid;
+gap: 18px;
+animation: listFadeIn 0.5s ease-out;
+}
+@keyframes listFadeIn {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+.listing {
+border: 1px solid #e1e8ed;
+border-radius: 12px;
+padding: 22px;
+background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+position: relative;
+overflow: hidden;
+animation: listingSlideUp 0.6s ease-out forwards;
+opacity: 0;
+}
+@keyframes listingSlideUp {
+from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}
+}
+.listing:nth-child(1) { animation-delay: 0.1s; }
+.listing:nth-child(2) { animation-delay: 0.15s; }
+.listing:nth-child(3) { animation-delay: 0.2s; }
+.listing:nth-child(4) { animation-delay: 0.25s; }
+.listing:nth-child(5) { animation-delay: 0.3s; }
+.listing::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 3px;
+background: linear-gradient(90deg, #1e5aa8 0%, #2e7bb4 100%);
+opacity: 0;
+transition: opacity 0.3s;
+}
+.listing:hover {
+transform: translateY(-8px) scale(1.01);
+box-shadow: 0 20px 48px rgba(30, 90, 168, 0.16);
+border-color: #1e5aa8;
+}
+.listing:hover::before {
+opacity: 1;
+animation: slideAcross 0.6s ease-in-out;
+}
+@keyframes slideAcross {
+0% { transform: translateX(-100%); }
+100% { transform: translateX(0); }
+}
+.listing h3 {
+color: #1e5aa8;
+margin-bottom: 8px;
+font-size: 1.25em;
+font-weight: 700;
+}
+.listing-price {
+font-size: 1.5em;
+font-weight: 800;
+color: #1e5aa8;
+margin: 14px 0;
+display: flex;
+align-items: baseline;
+}
+.listing-price::before {
+content: '$';
+font-size: 0.85em;
+margin-right: 2px;
+}
+.listing-desc {
+color: #555;
+font-size: 0.95em;
+margin-bottom: 14px;
+line-height: 1.6;
+}
+.listing-meta {
+font-size: 0.85em;
+color: #8a95a1;
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+padding-top: 12px;
+border-top: 1px solid #e1e8ed;
+}
+.listing-meta span {
+display: flex;
+align-items: center;
+}
+.loading {
+text-align: center;
+color: #1e5aa8;
+padding: 30px;
+font-size: 15px;
+font-weight: 500;
+letter-spacing: 0.5px;
+}
+@media (max-width: 768px) {
+.content {
+grid-template-columns: 1fr;
+gap: 30px;
+padding: 30px 20px;
+}
+header h1 {
+font-size: 2em;
+}
+header {
+padding: 30px 20px;
+}
+header p {
+font-size: 1em;
+}
+}
+.nav-tabs {
+display: flex;
+gap: 8px;
+margin-bottom: 28px;
+border-bottom: 2px solid #e1e8ed;
+padding-bottom: 0;
+}
+.nav-tabs button {
+background: none;
+border: none;
+color: #8a95a1;
+padding: 12px 20px;
+cursor: pointer;
+border-bottom: 3px solid transparent;
+margin-bottom: -2px;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+font-weight: 600;
+font-size: 15px;
+position: relative;
+}
+.nav-tabs button:hover {
+color: #1e5aa8;
+}
+.nav-tabs button.active {
+color: #1e5aa8;
+border-bottom-color: #1e5aa8;
+}
+.nav-tabs button.active::after {
+content: '';
+position: absolute;
+bottom: -2px;
+left: 0;
+right: 0;
+height: 3px;
+background: linear-gradient(90deg, #1e5aa8 0%, #2e7bb4 100%);
+}
+.tab-content {
+display: none;
+animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(-5px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.tab-content.active {
+display: block;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Echo Hub</h1>
+<p>Anonymous Buyer-Vendor Marketplace</p>
+</header>
 
+<div class="content">
+<div class="section">
+<div class="nav-tabs">
+<button class="nav-btn active" data-tab="buyer">Buyer</button>
+<button class="nav-btn" data-tab="vendor">Vendor</button>
+</div>
+
+<div id="buyer-form" class="tab-content active">
+<h2>📋 Buyer Inquiry</h2>
+<div class="error" id="buyerError"></div>
+<div class="success" id="buyerSuccess"></div>
+
+<form id="buyerForm">
+<div class="form-group">
+<label for="buyerVendorId">Vendor Unique ID</label>
+<input type="text" id="buyerVendorId" placeholder="Enter vendor ID" required>
+</div>
+
+<div class="form-group">
+<label for="buyerId">Your Buyer ID (Anonymous)</label>
+<input type="text" id="buyerId" placeholder="Auto-generated anonymous ID" readonly>
+</div>
+
+<div class="form-group">
+<label for="buyerMessage">Your Inquiry</label>
+<textarea id="buyerMessage" placeholder="Describe your request..." required></textarea>
+</div>
+
+<button type="submit">Submit Inquiry</button>
+</form>
+</div>
+
+<div id="vendor-form" class="tab-content">
+<h2>📦 Post Listing</h2>
+<div class="error" id="vendorError"></div>
+<div class="success" id="vendorSuccess"></div>
+
+<form id="vendorForm">
+<div class="form-group">
+<label for="vendorId">Your Vendor ID (Anonymous)</label>
+<input type="text" id="vendorId" placeholder="Auto-generated anonymous ID" readonly>
+</div>
+
+<div class="form-group">
+<label for="title">Product Title</label>
+<input type="text" id="title" placeholder="What are you selling?" required>
+</div>
+
+<div class="form-group">
+<label for="category">Category</label>
+<select id="category" required>
+<option value="">Select a category</option>
+<option value="Electronics">Electronics</option>
+<option value="Furniture">Furniture</option>
+<option value="Clothing">Clothing</option>
+<option value="Books">Books</option>
+<option value="Other">Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="price">Price ($)</label>
+<input type="number" id="price" placeholder="0.00" step="0.01" min="0" required>
+</div>
+
+<div class="form-group">
+<label for="description">Description</label>
+<textarea id="description" placeholder="Describe your product..." required></textarea>
+</div>
+
+<div class="form-group">
+<label for="condition">Condition</label>
+<select id="condition" required>
+<option value="">Select condition</option>
+<option value="New">New</option>
+<option value="Like New">Like New</option>
+<option value="Good">Good</option>
+<option value="Fair">Fair</option>
+<option value="Used">Used</option>
+</select>
+</div>
+
+<button type="submit">Post Listing</button>
+</form>
+</div>
+</div>
+
+<div class="section">
+<h2>🎯 Live Listings</h2>
+<div id="listings" class="listings">
+<div class="loading">Loading listings...</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+// Configuration
+const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
+// Initialize Supabase Client
+// Initialize Supabase Client - wait for library to load
+  let supabase = null;
+
+  // Initialize Supabase client - robust version that ensures initialization happens
+  function setupSupabase() {
+    if (!window.supabase || !window.supabase.createClient) {
+      console.log('Supabase library not ready, retrying...');
+      setTimeout(setupSupabase, 100);
+      return;
+    }
+
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log('✅ Supabase client initialized successfully');
+    } catch (err) {
+      console.error('❌ Failed to initialize Supabase:', err.message);
+      supabase = null;
+    }
+  }
+
+  // Start initialization and keep retrying if not working
+  setupSupabase();
+  setInterval(() => {
+    if (!supabase || typeof supabase.from !== 'function') {
+      setupSupabase();
+    }
+  }, 500);
+
+// PII Regex Patterns for validation
+const piiPatterns = {
+email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+phone: /(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|[0-9]{10})/g,
+url: /(https?:\/\/[^\s]+|www\.[^\s]+)/gi,
+socialMedia: /[@#](username|handle|user|account|profile)/gi,
+ipAddress: /(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/g
+};
+
+// PII Validation (The Bouncer)
+function validatePII(text) {
+const violations = [];
+
+if (piiPatterns.email.test(text)) violations.push('Email addresses');
+if (piiPatterns.phone.test(text)) violations.push('Phone numbers');
+if (piiPatterns.url.test(text)) violations.push('URLs');
+if (piiPatterns.socialMedia.test(text)) violations.push('Social media handles');
+if (piiPatterns.ipAddress.test(text)) violations.push('IP addresses');
+
+return violations;
+}
+
+// Generate anonymous ID
+function generateAnonymousId() {
+return 'ID' + Math.random().toString(36).substr(2, 9).toUpperCase();
+}
+
+// Initialize
+document.getElementById('buyerId').value = generateAnonymousId();
+document.getElementById('vendorId').value = generateAnonymousId();
+
+// Tab navigation
+document.querySelectorAll('.nav-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+const tab = e.target.dataset.tab;
+document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+document.getElementById(tab + '-form').classList.add('active');
+e.target.classList.add('active');
+});
+});
+
+// Form submission handlers
+document.getElementById('buyerForm').addEventListener('submit', async (e) => {
+e.preventDefault();
+
+// Log supabase state before check
+console.log('🔵 BUYER FORM SUBMITTED');
+console.log('supabase variable type:', typeof supabase);
+console.log('supabase is null:', supabase === null);
+console.log('supabase is undefined:', supabase === undefined);
+console.log('supabase truthy:', !!supabase);
+if (supabase) {
+  console.log('supabase.from type:', typeof supabase.from);
+  console.log('supabase methods:', Object.keys(supabase).slice(0, 5));
+}
+
+// Check if supabase is initialized
+if (!supabase) {
+console.error('❌ supabase not initialized at form submission time');
+showError('buyerError', 'System is loading. Please wait and try again.');
+return;
+}
+console.log('✓ supabase is ready');
+
+const vendorId = document.getElementById('buyerVendorId').value;
+const buyerId = document.getElementById('buyerId').value;
+const message = document.getElementById('buyerMessage').value;
+
+// PII Check
+const piiIssues = validatePII(message);
+if (piiIssues.length > 0) {
+showError('buyerError', 'Invalid input detected: ' + piiIssues.join(', ') + '. Please remove personal information.');
+return;
+}
+
+try {
+console.log('Submitting buyer inquiry...', { buyerId, vendorId });
+// Send to Supabase using SDK
+const { data, error } = await supabase.from('inquiries').insert([{
+buyer_id: buyerId,
+  				vendor_id: vendorId,
+  				inquiry: message
+}]);
+
+if (error) {
+console.error('Supabase insert error:', error);
+showError('buyerError', 'Error submitting inquiry: ' + error.message);
+return;
+}
+
+console.log('Inquiry submitted successfully', data);
+
+// Send Discord notification
+await fetch(DISCORD_WEBHOOK_URL, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+content: `🔔 New buyer inquiry from ${buyerId}`,
+embeds: [{
+title: 'Buyer Inquiry',
+description: message,
+fields: [
+{ name: 'Buyer ID', value: buyerId, inline: true },
+{ name: 'Vendor ID', value: vendorId, inline: true }
+],
+color: 3447003
+}]
+})
+}).catch(() => {});
+
+showSuccess('buyerSuccess', 'Inquiry submitted successfully!');
+document.getElementById('buyerForm').reset();
+document.getElementById('buyerId').value = generateAnonymousId();
+setTimeout(loadListings, 1000);
+} catch (error) {
+showError('buyerError', 'Network error: ' + error.message);
+}
+});
+
+document.getElementById('vendorForm').addEventListener('submit', async (e) => {
+e.preventDefault();
+
+// Log supabase state before check
+console.log('🔵 VENDOR FORM SUBMITTED');
+console.log('supabase variable type:', typeof supabase);
+console.log('supabase is null:', supabase === null);
+console.log('supabase is undefined:', supabase === undefined);
+console.log('supabase truthy:', !!supabase);
+if (supabase) {
+  console.log('supabase.from type:', typeof supabase.from);
+  console.log('supabase methods:', Object.keys(supabase).slice(0, 5));
+}
+
+// Check if supabase is initialized
+if (!supabase) {
+console.error('❌ supabase not initialized at form submission time');
+showError('vendorError', 'System is loading. Please wait and try again.');
+return;
+}
+console.log('✓ supabase is ready');
+
+const title = document.getElementById('title').value;
+const category = document.getElementById('category').value;
+const price = document.getElementById('price').value;
+const description = document.getElementById('description').value;
+const condition = document.getElementById('condition').value;
+const vendorId = document.getElementById('vendorId').value;
+
+// PII Check on all fields
+const allText = `${title} ${description}`;
+const piiIssues = validatePII(allText);
+if (piiIssues.length > 0) {
+showError('vendorError', 'Invalid input detected: ' + piiIssues.join(', ') + '. Please remove personal information.');
+return;
+}
+
+try {
+console.log('Submitting vendor listing...', { vendorId, title, price });
+// Send to Supabase using SDK
+const { data, error } = await supabase.from('listings').insert([{
+title: title,
+category: category,
+price: parseFloat(price),
+description: description,
+condition: condition,
+status: 'active',
+vendor_id: vendorId
+}]);
+
+if (error) {
+console.error('Supabase insert error:', error);
+showError('vendorError', 'Error posting listing: ' + error.message);
+return;
+}
+
+console.log('Listing posted successfully', data);
+
+// Send Discord notification
+await fetch(DISCORD_WEBHOOK_URL, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+content: `📦 New listing from ${vendorId}`,
+embeds: [{
+title: title,
+description: description,
+fields: [
+{ name: 'Price', value: `$${price}`, inline: true },
+{ name: 'Category', value: category, inline: true },
+{ name: 'Condition', value: condition, inline: true },
+{ name: 'Vendor ID', value: vendorId, inline: true }
+],
+color: 65280
+}]
+})
+}).catch(() => {});
+
+showSuccess('vendorSuccess', 'Listing posted successfully!');
+document.getElementById('vendorForm').reset();
+document.getElementById('vendorId').value = generateAnonymousId();
+setTimeout(loadListings, 1000);
+} catch (error) {
+showError('vendorError', 'Network error: ' + error.message);
+}
+});
+
+// Load and display listings
+async function loadListings() {
+const listingsContainer = document.getElementById('listings');
+try {
+const { data: listings, error } = await supabase
+.from('listings')
+.select('*')
+.order('created_at', { ascending: false })
+.limit(50);
+
+if (error) {
+listingsContainer.innerHTML = `<p>Error loading listings: ${error.message}</p>`;
+return;
+}
+
+if (!listings || listings.length === 0) {
+listingsContainer.innerHTML = '<p>No listings yet. Be the first to post!</p>';
+return;
+}
+
+listingsContainer.innerHTML = listings.map(listing => `
+<div class="listing">
+<h3>${listing.title}</h3>
+<div class="listing-price">$${parseFloat(listing.price).toFixed(2)}</div>
+<div class="listing-desc">${listing.description}</div>
+<div class="listing-meta">
+Category: ${listing.category} | Condition: ${listing.condition} |
+Posted: ${new Date(listing.created_at).toLocaleDateString()}
+</div>
+</div>
+`).join('');
+} catch (error) {
+listingsContainer.innerHTML = `<p>Error loading listings: ${error.message}</p>`;
+}
+}
+
+function showError(elementId, message) {
+const element = document.getElementById(elementId);
+element.textContent = message;
+element.style.display = 'block';
+setTimeout(() => { element.style.display = 'none'; }, 5000);
+}
+
+function showSuccess(elementId, message) {
+const element = document.getElementById(elementId);
+element.textContent = message;
+element.style.display = 'block';
+setTimeout(() => { element.style.display = 'none'; }, 3000);
+}
+
+// Load listings on page load and refresh every 10 seconds
+loadListings();
+setInterval(loadListings, 10000);
+</script>
+</body>
+</html>
