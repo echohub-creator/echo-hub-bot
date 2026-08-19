@@ -604,16 +604,7 @@ try {
 }
 document.getElementById('vendorId').value = generateAnonymousId();
 
-// Tab navigation
-document.querySelectorAll('.nav-btn').forEach(btn => {
-btn.addEventListener('click', (e) => {
-const tab = e.target.dataset.tab;
-document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-document.getElementById(tab + '-form').classList.add('active');
-e.target.classList.add('active');
-});
-});
+// Tab navigation - moved to DOMContentLoaded (see end of script);
 
 // Form submission handlers
 document.getElementById('buyerForm').addEventListener('submit', async (e) => {
@@ -867,6 +858,30 @@ document.addEventListener('DOMContentLoaded', function() {
   } else {
     console.log('✅ Supabase already initialized');
   }
+
+	  // Tab navigation - NOW SAFE TO ATTACH LISTENERS
+	  console.log('🔧 Attaching tab navigation listeners...');
+	  const navButtons = document.querySelectorAll('.nav-btn');
+	  console.log(`Found ${navButtons.length} nav buttons`);
+
+	  navButtons.forEach(btn => {
+		      btn.addEventListener('click', (e) => {
+				        e.preventDefault();
+				        const tab = e.target.dataset.tab;
+				        console.log(`Tab clicked: ${tab}`);
+
+				        // Remove active class from all content and buttons
+				        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+				        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+				        // Add active class to clicked button and corresponding content
+				        document.getElementById(tab + '-form').classList.add('active');
+				        e.target.classList.add('active');
+				        console.log(`✅ Switched to ${tab} tab`);
+			  });
+	  });
+
+	  console.log('✅ Tab navigation listeners attached successfully');
 });
 </script>
 
