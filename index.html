@@ -510,15 +510,38 @@ function setupSupabase() {
   }
 }
 
-// Start initialization
+// Start initialization - INLINE to ensure it runs
 console.log('🚀 Starting Supabase initialization...');
-setupSupabase();
+
+// Immediately initialize Supabase
+function initializeNow() {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    try {
+      const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      if (newClient && typeof newClient.from === 'function') {
+        supabase = newClient;
+        console.log('✅ Supabase initialized successfully');
+      } else {
+        console.error('❌ Client missing .from method');
+        setTimeout(initializeNow, 500);
+      }
+    } catch (err) {
+      console.error('❌ Initialization error:', err.message);
+      setTimeout(initializeNow, 500);
+    }
+  } else {
+    console.log('⏳ Supabase library not ready, will retry...');
+    setTimeout(initializeNow, 100);
+  }
+}
+
+initializeNow();
 
 // Keep retrying if not working
 setInterval(() => {
   if (!supabase || typeof supabase.from !== 'function') {
     console.warn('⚠️ Supabase lost or invalid, reinitializing...');
-    setupSupabase();
+    initializeNow();
   }
 }, 1000);
 
