@@ -294,8 +294,29 @@ const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
 // Initialize Supabase Client
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Supabase Client - wait for library to load
+  let supabase;
+  const initSupabase = () => {
+      console.log('Initializing Supabase with URL:', SUPABASE_URL);
+      if (!window.supabase) {
+            console.error('Supabase library not loaded!');
+            setTimeout(initSupabase, 100);
+            return;
+      }
+      try {
+            const { createClient } = window.supabase;
+            supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('Supabase client initialized successfully');
+      } catch (e) {
+            console.error('Failed to initialize Supabase:', e);
+      }
+  };
+
+  if (window.supabase) {
+      initSupabase();
+  } else {
+      setTimeout(initSupabase, 500);
+  }
 
 // PII Regex Patterns for validation
 const piiPatterns = {
