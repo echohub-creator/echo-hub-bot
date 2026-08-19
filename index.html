@@ -482,30 +482,45 @@ const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/153909772238298332
 // Initialize Supabase Client - wait for library to load
   let supabase = null;
 
-  // Initialize Supabase client - robust version that ensures initialization happens
+  // Initialize Supabase client - robust version with validation
   function setupSupabase() {
-    if (!window.supabase || !window.supabase.createClient) {
-      console.log('Supabase library not ready, retrying...');
+    // Check if library is loaded
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      console.log('⏳ Supabase library not ready yet, will retry...');
       setTimeout(setupSupabase, 100);
       return;
     }
 
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.log('✅ Supabase client initialized successfully');
+      const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // Validate the client was created properly
+      if (!newClient || typeof newClient.from !== 'function') {
+        console.error('❌ Supabase client created but missing .from method');
+        setTimeout(setupSupabase, 500);
+        return;
+      }
+
+      supabase = newClient;
+      console.log('✅ Supabase client initialized successfully with working .from method');
     } catch (err) {
       console.error('❌ Failed to initialize Supabase:', err.message);
       supabase = null;
+      setTimeout(setupSupabase, 500);
     }
   }
 
-  // Start initialization and keep retrying if not working
+  // Start initialization
+  console.log('🚀 Starting Supabase initialization...');
   setupSupabase();
+
+  // Keep retrying if not working
   setInterval(() => {
     if (!supabase || typeof supabase.from !== 'function') {
+      console.warn('⚠️ Supabase lost or invalid, reinitializing...');
       setupSupabase();
     }
-  }, 500);
+  }, 1000);
 
 // PII Regex Patterns for validation
 const piiPatterns = {
@@ -717,6 +732,14 @@ showError('vendorError', 'Network error: ' + error.message);
 // Load and display listings
 async function loadListings() {
 const listingsContainer = document.getElementById('listings');
+
+// CRITICAL: Check if Supabase is initialized before attempting to use it
+if (!supabase || typeof supabase.from !== 'function') {
+	console.log('⚠️ Supabase not ready yet, will retry automatically');
+	listingsContainer.innerHTML = '<div class="loading">Initializing system...</div>';
+	return;
+}
+
 try {
 const { data: listings, error } = await supabase
 .from('listings')
@@ -764,9 +787,19 @@ element.style.display = 'block';
 setTimeout(() => { element.style.display = 'none'; }, 3000);
 }
 
-// Load listings on page load and refresh every 10 seconds
-loadListings();
-setInterval(loadListings, 10000);
+// Load listings - use robust initialization pattern
+// Start after Supabase is definitely ready (max 5 second wait)
+setTimeout(() => {
+	console.log('🔄 Initial listings load...');
+	loadListings();
+}, 1000);
+
+// Refresh every 10 seconds with safety check
+setInterval(() => {
+	if (supabase && typeof supabase.from === 'function') {
+		loadListings();
+	}
+}, 10000);
 </script>
 </body>
 </html>
