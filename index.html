@@ -851,6 +851,56 @@ setInterval(() => {
 		loadListings();
 	}
 }, 10000);
+
+// FALLBACK: Initialize via DOMContentLoaded to ensure it runs
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('📄 DOMContentLoaded fired - ensuring Supabase is initialized');
+  if (!supabase || typeof supabase.from !== 'function') {
+    console.log('🔄 Initializing Supabase via DOMContentLoaded...');
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log('✅ Supabase initialized via DOMContentLoaded');
+      loadListings();
+    } catch (err) {
+      console.error('❌ DOMContentLoaded init error:', err.message);
+    }
+  } else {
+    console.log('✅ Supabase already initialized');
+  }
+});
+</script>
+
+<!-- FINAL INITIALIZATION: Run immediately after page loads -->
+<script>
+(function() {
+  console.log('🚀 FINAL INIT SCRIPT RUNNING');
+
+  // Wait a tiny bit for Supabase library to load
+  function ensureInitialized() {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      if (!window.supabase_main || typeof window.supabase_main.from !== 'function') {
+        try {
+          window.supabase_main = window.supabase.createClient(
+            'https://egrnqtvpptkvvnckjzfj.supabase.co',
+            'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi'
+          );
+          // Assign to global supabase if not already initialized
+          if (!window.supabase || typeof window.supabase.from !== 'function') {
+            window.supabase = window.supabase_main;
+          }
+          console.log('✅ Supabase initialized by FINAL INIT SCRIPT');
+        } catch (err) {
+          console.log('❌ Final init error:', err.message);
+          setTimeout(ensureInitialized, 500);
+        }
+      }
+    } else {
+      setTimeout(ensureInitialized, 100);
+    }
+  }
+
+  ensureInitialized();
+})();
 </script>
 </body>
 </html>
