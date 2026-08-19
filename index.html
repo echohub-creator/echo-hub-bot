@@ -295,28 +295,34 @@ const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
 // Initialize Supabase Client
 // Initialize Supabase Client - wait for library to load
-  let supabase;
-  const initSupabase = () => {
-      console.log('Initializing Supabase with URL:', SUPABASE_URL);
-      if (!window.supabase) {
-            console.error('Supabase library not loaded!');
-            setTimeout(initSupabase, 100);
-            return;
-      }
-      try {
-            const { createClient } = window.supabase;
-            supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-            console.log('Supabase client initialized successfully');
-      } catch (e) {
-            console.error('Failed to initialize Supabase:', e);
-      }
-  };
+let supabase = null;
 
-  if (window.supabase) {
-      initSupabase();
-  } else {
-      setTimeout(initSupabase, 500);
-  }
+      // Function to create and test Supabase client
+      function setupSupabase() {
+              if (!window.supabase || !window.supabase.createClient) {
+                        console.warn('Supabase library not ready, retrying...');
+                        setTimeout(setupSupabase, 100);
+                        return;
+              }
+
+              try {
+                        const SUPABASE_URL = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
+                        const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
+
+                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                        console.log('✅ Supabase client initialized');
+              } catch (err) {
+                        console.error('Supabase initialization error:', err);
+              }
+      }
+
+      // Start initialization immediately and retry until successful
+      setupSupabase();
+      setInterval(() => {
+              if (!supabase || typeof supabase.from !== 'function') {
+                        setupSupabase();
+              }
+  }, 500);
 
 // PII Regex Patterns for validation
 const piiPatterns = {
