@@ -549,6 +549,11 @@ function generateAnonymousId() {
 return 'ID' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
 
+// Explicitly assign to window for guaranteed global access
+window.setupSupabase = setupSupabase;
+window.validatePII = validatePII;
+window.generateAnonymousId = generateAnonymousId;
+
 // Initialize
 document.getElementById('buyerId').value = generateAnonymousId();
 document.getElementById('vendorId').value = generateAnonymousId();
