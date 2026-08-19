@@ -474,13 +474,27 @@ display: block;
 </div>
 
 <script>
+// CRITICAL: Initialize immediately
+console.log('🚀 PAGE SCRIPT STARTING');
+
 // Configuration
 const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
-// Initialize Supabase Client
-// Initialize Supabase Client - wait for library to load
+
+// Initialize Supabase immediately
 let supabase = null;
+
+// Attempt immediate initialization (before anything else)
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+  console.log('✅ Supabase library available immediately');
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase client created immediately');
+  } catch (err) {
+    console.log('⏳ Immediate init failed, will retry:', err.message);
+  }
+}
 
 // Initialize Supabase client - robust version with validation
 function setupSupabase() {
