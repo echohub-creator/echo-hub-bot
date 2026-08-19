@@ -480,47 +480,47 @@ const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
 // Initialize Supabase Client
 // Initialize Supabase Client - wait for library to load
-  let supabase = null;
+let supabase = null;
 
-  // Initialize Supabase client - robust version with validation
-  function setupSupabase() {
-    // Check if library is loaded
-    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-      console.log('⏳ Supabase library not ready yet, will retry...');
-      setTimeout(setupSupabase, 100);
+// Initialize Supabase client - robust version with validation
+function setupSupabase() {
+  // Check if library is loaded
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    console.log('⏳ Supabase library not ready yet, will retry...');
+    setTimeout(setupSupabase, 100);
+    return;
+  }
+
+  try {
+    const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Validate the client was created properly
+    if (!newClient || typeof newClient.from !== 'function') {
+      console.error('❌ Supabase client created but missing .from method');
+      setTimeout(setupSupabase, 500);
       return;
     }
 
-    try {
-      const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-      // Validate the client was created properly
-      if (!newClient || typeof newClient.from !== 'function') {
-        console.error('❌ Supabase client created but missing .from method');
-        setTimeout(setupSupabase, 500);
-        return;
-      }
-
-      supabase = newClient;
-      console.log('✅ Supabase client initialized successfully with working .from method');
-    } catch (err) {
-      console.error('❌ Failed to initialize Supabase:', err.message);
-      supabase = null;
-      setTimeout(setupSupabase, 500);
-    }
+    supabase = newClient;
+    console.log('✅ Supabase client initialized successfully with working .from method');
+  } catch (err) {
+    console.error('❌ Failed to initialize Supabase:', err.message);
+    supabase = null;
+    setTimeout(setupSupabase, 500);
   }
+}
 
-  // Start initialization
-  console.log('🚀 Starting Supabase initialization...');
-  setupSupabase();
+// Start initialization
+console.log('🚀 Starting Supabase initialization...');
+setupSupabase();
 
-  // Keep retrying if not working
-  setInterval(() => {
-    if (!supabase || typeof supabase.from !== 'function') {
-      console.warn('⚠️ Supabase lost or invalid, reinitializing...');
-      setupSupabase();
-    }
-  }, 1000);
+// Keep retrying if not working
+setInterval(() => {
+  if (!supabase || typeof supabase.from !== 'function') {
+    console.warn('⚠️ Supabase lost or invalid, reinitializing...');
+    setupSupabase();
+  }
+}, 1000);
 
 // PII Regex Patterns for validation
 const piiPatterns = {
