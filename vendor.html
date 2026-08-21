@@ -316,6 +316,13 @@ function setupSupabase() {
 
 // Generate or retrieve vendor ID
 function getOrCreateVendorId() {
+    // Check for vendor_id in URL parameters first
+    const params = new URLSearchParams(window.location.search);
+    const urlVendorId = params.get('vendor_id');
+    if (urlVendorId) {
+          return urlVendorId;
+    }
+  
   let vendorId = localStorage.getItem('echo_hub_vendor_id');
   if (!vendorId) {
     vendorId = 'VENDOR_' + Math.random().toString(36).substr(2, 9).toUpperCase();
