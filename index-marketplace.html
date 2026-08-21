@@ -51,21 +51,64 @@ gap: 30px;
 .categories-panel {
 background: white;
 border-radius: 16px;
-padding: 30px;
+padding: 20px;
 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-height: fit-content;
-max-height: calc(100vh - 200px);
-overflow-y: auto;
+display: flex;
+flex-direction: column;
 position: sticky;
 top: 20px;
 }
+.categories-panel::-webkit-scrollbar {
+width: 8px;
+}
+.categories-panel::-webkit-scrollbar-track {
+background: #f1f5f9;
+border-radius: 10px;
+}
+.categories-panel::-webkit-scrollbar-thumb {
+background: #cbd5e1;
+border-radius: 10px;
+}
+.categories-panel::-webkit-scrollbar-thumb:hover {
+background: #94a3b8;
+}
 .categories-panel h2 {
 color: #1e5aa8;
-margin-bottom: 20px;
+margin-bottom: 12px;
 font-size: 1.3em;
 border-bottom: 2px solid #e1e8ed;
-padding-bottom: 15px;
+padding-bottom: 12px;
 font-weight: 700;
+}
+.categories-hint {
+font-size: 0.8em;
+color: #64748b;
+margin-bottom: 10px;
+padding: 6px 10px;
+background: #f0f9ff;
+border-left: 3px solid #1e5aa8;
+border-radius: 4px;
+display: flex;
+align-items: center;
+gap: 6px;
+font-style: italic;
+flex-shrink: 0;
+}
+.categories-hint::before {
+content: "↓";
+display: inline-block;
+animation: bounce 2s infinite;
+font-weight: bold;
+color: #1e5aa8;
+}
+#categoriesList {
+flex: 1;
+overflow-y: auto;
+min-height: 0;
+}
+@keyframes bounce {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(3px); }
 }
 .category-item {
 padding: 12px 15px;
@@ -98,7 +141,9 @@ font-size: 0.85em;
 font-weight: 600;
 }
 .category-item.empty-category {
-opacity: 1; color: #999;}
+opacity: 1;
+color: #999;
+}
 .subcategory-item {
 padding: 10px 15px;
 margin: 5px 0 5px 15px;
@@ -455,7 +500,7 @@ background: #d5dce2;
 grid-template-columns: 1fr;
 }
 .categories-panel {
-max-height: none;
+max-height: 240px;
 position: relative;
 top: auto;
 }
@@ -496,6 +541,7 @@ width: 100%;
 <!-- Categories Sidebar -->
 <div class="categories-panel">
 <h2>🏷️ Categories</h2>
+<div class="categories-hint">Scroll to explore all categories</div>
 <div id="categoriesList"></div>
 </div>
 
@@ -591,26 +637,35 @@ let currentSelectedSubcategory = null;
 let currentInquiryData = null;
 
 async function initMarketplace() {
-  let retries = 0;
-  while (!window.supabase || !window.supabase.createClient) {
-    if (retries++ > 50) {
-      showError('Failed to load Supabase library');
-      return;
+  try {
+    let retries = 0;
+    while (!window.supabase || !window.supabase.createClient) {
+      if (retries++ > 50) {
+        showError('Failed to load Supabase library');
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
+
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let buyerId = localStorage.getItem('echo_hub_buyer_id');
+    if (!buyerId) {
+      buyerId = 'BUYER_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      localStorage.setItem('echo_hub_buyer_id', buyerId);
+    }
+
+    console.log('About to load listings...');
+    await loadListings();
+    console.log('Listings loaded, about to render categories...');
+    renderCategories();
+    console.log('Categories rendered, about to setup event listeners...');
+    setupEventListeners();
+    console.log('Event listeners set up, marketplace ready');
+  } catch(err) {
+    console.error('Error during marketplace initialization:', err);
+    throw err;
   }
-
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  let buyerId = localStorage.getItem('echo_hub_buyer_id');
-  if (!buyerId) {
-    buyerId = 'BUYER_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    localStorage.setItem('echo_hub_buyer_id', buyerId);
-  }
-
-  await loadListings();
-  renderCategories();
-  setupEventListeners();
 }
 
 async function loadListings() {
@@ -639,29 +694,43 @@ async function loadListings() {
   }
 }
 
+function sanitizeCategoryId(category) {
+  // Sanitize category name for safe use in HTML IDs
+  return category.replace(/[&\s\/]/g, '_').replace(/[^\w_-]/g, '');
+}
+
 function renderCategories() {
   const categoriesList = document.getElementById('categoriesList');
+  if (!categoriesList) {
+    console.warn('Categories list element not found in DOM');
+    return;
+  }
   categoriesList.innerHTML = '';
 
-  Object.keys(CATEGORY_SUBCATEGORIES).forEach(category => {
+  const categories = Object.keys(CATEGORY_SUBCATEGORIES);
+  console.log(`Rendering ${categories.length} categories`);
+
+  categories.forEach(category => {
     const categoryDiv = document.createElement('div');
-        if (!categoriesList) {
-                console.warn('Categories list element not found in DOM');
-                return;
-        }
     const subCategories = CATEGORY_SUBCATEGORIES[category];
     const totalCount = Object.values(categoryCounts[category] || {}).reduce((a, b) => a + b, 0);
     const isEmptyCategory = totalCount === 0;
+    const sanitizedId = sanitizeCategoryId(category);
 
     categoryDiv.innerHTML = `
       <div class="category-item ${isEmptyCategory ? 'empty-category' : ''}" onclick="toggleSubcategories('${category}')">
         <span class="category-label">${category}</span>
         <span class="category-count">${totalCount}</span>
       </div>
-      <div id="subcategories-${category}"></div>
+      <div id="subcategories-${sanitizedId}"></div>
     `;
 
-    const subcategoriesContainer = categoryDiv.querySelector(`#subcategories-${category}`);
+    const subcategoriesContainer = categoryDiv.querySelector(`#subcategories-${sanitizedId}`);
+    if (!subcategoriesContainer) {
+      console.error(`Failed to find subcategories container for category: ${category}`);
+      return;
+    }
+
     subCategories.forEach(subCategory => {
       const count = categoryCounts[category]?.[subCategory] || 0;
       const isEmptySub = count === 0;
@@ -683,7 +752,12 @@ function renderCategories() {
 }
 
 function toggleSubcategories(category) {
-  const container = document.getElementById(`subcategories-${category}`);
+  const sanitizedId = sanitizeCategoryId(category);
+  const container = document.getElementById(`subcategories-${sanitizedId}`);
+  if (!container) {
+    console.error(`Container not found for category: ${category}`);
+    return;
+  }
   const items = container.querySelectorAll('.subcategory-item');
   items.forEach(item => item.classList.toggle('show'));
 }
@@ -792,7 +866,8 @@ async function submitInquiry(event) {
       .insert({
         vendor_id: vendorId,
         buyer_id: buyerId,
-        listing_id: listingId,
+        // listing_id temporarily removed due to Supabase schema cache issue
+        // Will be re-enabled after schema cache is refreshed
         inquiry: inquiryMessage,
         created_at: new Date().toISOString()
       });
