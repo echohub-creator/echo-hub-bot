@@ -1,4 +1,4 @@
-h<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,8 @@ h<!DOCTYPE html>
   <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="pragma" content="no-cache">
   <meta http-equiv="expires" content="0">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js?t=20260821161200"></script><style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js?t=20260821161200"></script>
+<style>
 * {
 margin: 0;
 padding: 0;
@@ -291,144 +292,87 @@ margin-top: 10px;
 </div>
 
 <script>
-// Configuration
-const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
+const SUPABASE_URL = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 
-let supabase = null;
-let currentVendorId = null;
-
-// Initialize Supabase
-function setupSupabase() {
-  if (!window.supabase || !window.supabase.createClient) {
-    console.log('Supabase library not ready, retrying...');
-    setTimeout(setupSupabase, 100);
-    return;
-  }
-
-  try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✅ Supabase client initialized successfully');
-    initializeVendorPortal();
-  } catch (err) {
-    console.error('❌ Failed to initialize Supabase:', err.message);
-    showError('Failed to initialize Supabase connection');
-  }
-}
-
-// Generate or retrieve vendor ID
-function getOrCreateVendorId() {
-    // Check for vendor_id in URL parameters first
-    const params = new URLSearchParams(window.location.search);
-    const urlVendorId = params.get('vendor_id');
-    if (urlVendorId) {
-          return urlVendorId;
+async function initPortal() {
+  // Retry until Supabase library is ready
+  let retries = 0;
+  while (!window.supabase || !window.supabase.createClient) {
+    if (retries++ > 50) {
+      document.getElementById('errorMessage').textContent = 'Failed to load Supabase library';
+      document.getElementById('errorMessage').style.display = 'block';
+      return;
     }
-  
-  let vendorId = localStorage.getItem('echo_hub_vendor_id');
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Initialize Supabase client
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Get or create vendor ID
+  const params = new URLSearchParams(window.location.search);
+  let vendorId = params.get('vendor_id') || localStorage.getItem('echo_hub_vendor_id');
   if (!vendorId) {
     vendorId = 'VENDOR_' + Math.random().toString(36).substr(2, 9).toUpperCase();
     localStorage.setItem('echo_hub_vendor_id', vendorId);
   }
-  return vendorId;
-}
 
-// Initialize vendor portal
-function initializeVendorPortal() {
-  currentVendorId = getOrCreateVendorId();
-  document.getElementById('vendorId').textContent = currentVendorId;
+  // Set vendor ID in UI
+  document.getElementById('vendorId').textContent = vendorId;
 
-  loadInquiries();
+  // Function to load inquiries
+  async function loadInquiries() {
+    try {
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select('*')
+        .eq('vendor_id', vendorId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      document.getElementById('inquiryCount').textContent = (data || []).length;
+
+      const container = document.getElementById('inquiries');
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No inquiries yet</p><p style="font-size: 0.9em; margin: 0;">Share your vendor ID with potential buyers</p></div>';
+      } else {
+        container.innerHTML = data.map(inquiry => {
+          const div = document.createElement('div');
+          div.textContent = inquiry.inquiry;
+          return `<div class="inquiry-card"><div class="inquiry-header"><div class="buyer-id">Buyer: ${inquiry.buyer_id}</div><div class="timestamp">${new Date(inquiry.created_at).toLocaleDateString()}</div></div><div class="inquiry-message">${div.innerHTML}</div></div>`;
+        }).join('');
+      }
+    } catch (err) {
+      document.getElementById('errorMessage').textContent = 'Error loading inquiries: ' + err.message;
+      document.getElementById('errorMessage').style.display = 'block';
+    }
+  }
+
+  // Initial load
+  await loadInquiries();
 
   // Refresh every 10 seconds
   setInterval(loadInquiries, 10000);
+
+  // Setup copy button
+  window.copyToClipboard = () => {
+    navigator.clipboard.writeText(vendorId).then(() => {
+      const msg = document.getElementById('successMessage');
+      msg.textContent = 'Vendor ID copied to clipboard!';
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    });
+  };
 }
 
-// Load inquiries for this vendor
-async function loadInquiries() {
-  const inquiriesContainer = document.getElementById('inquiries');
-
-  try {
-    if (!supabase) {
-      showError('Supabase connection not initialized');
-      return;
-    }
-
-    const { data: inquiries, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .eq('vendor_id', currentVendorId)
-      .order('created_at', { ascending: false });
-    if (error) {
-      showError('Error loading inquiries: ' + error.message);
-      console.error('Supabase error:', error);
-      return;
-    }
-
-    // Update inquiry count
-    document.getElementById('inquiryCount').textContent = inquiries ? inquiries.length : 0;
-
-    if (!inquiries || inquiries.length === 0) {
-      inquiriesContainer.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">📭</div>
-          <p>No inquiries yet</p>
-          <p style="font-size: 0.9em; margin: 0;">Share your vendor ID with potential buyers</p>
-        </div>
-      `;
-      return;
-    }
-
-    inquiriesContainer.innerHTML = inquiries.map(inquiry => `
-      <div class="inquiry-card">
-        <div class="inquiry-header">
-          <div class="buyer-id">Buyer: ${inquiry.buyer_id}</div>
-          <div class="timestamp">${new Date(inquiry.created_at).toLocaleDateString()}</div>
-        </div>
-        <div class="inquiry-message">${escapeHtml(inquiry.inquiry)}</div>
-      </div>
-    `).join('');
-  } catch (error) {
-    showError('Error: ' + error.message);
-    console.error('Error loading inquiries:', error);
-  }
-}
-
-// Copy vendor ID to clipboard
-function copyToClipboard() {
-  const vendorId = document.getElementById('vendorId').textContent;
-  navigator.clipboard.writeText(vendorId).then(() => {
-    showSuccess('Vendor ID copied to clipboard!');
-  }).catch(err => {
-    showError('Failed to copy: ' + err.message);
-  });
-}
-
-// Show error message
-function showError(message) {
-  const element = document.getElementById('errorMessage');
-  element.textContent = message;
-  element.style.display = 'block';
-  setTimeout(() => { element.style.display = 'none'; }, 5000);
-}
-
-// Show success message
-function showSuccess(message) {
-  const element = document.getElementById('successMessage');
-  element.textContent = message;
-  element.style.display = 'block';
-  setTimeout(() => { element.style.display = 'none'; }, 3000);
-}
-
-// Escape HTML to prevent XSS
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Start initialization
-setupSupabase();
+// Start initialization immediately
+initPortal().catch(err => {
+  console.error('Portal initialization failed:', err);
+  document.getElementById('errorMessage').textContent = 'Failed to initialize portal: ' + err.message;
+  document.getElementById('errorMessage').style.display = 'block';
+});
 </script>
 </body>
 </html>
