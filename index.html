@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Echo Hub Blind-Broker System</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
 <style>
 * {
 margin: 0;
@@ -482,76 +482,29 @@ const SUPABASE_URL  = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1539097722382983323/86I05KyIgzsxRVWUUy1QMqxRctlnUhdSkhDRfLUKhTcOJXEvxOzfkqWs7yNhgVmngUb5';
 
-// Initialize Supabase immediately
+// Initialize Supabase - single unified approach
 let supabase = null;
-let supabaseReady = false;
 
-// Function to ensure Supabase is initialized
-function ensureSupabaseReady() {
-  if (supabaseReady && supabase && typeof supabase.from === 'function') {
-    return supabase;
+// Wait for Supabase library to load
+function initSupabase() {
+  if (!window.supabase || !window.supabase.createClient) {
+    console.log('⏳ Waiting for Supabase library...');
+    setTimeout(initSupabase, 100);
+    return;
   }
 
-  // If library is available, try to create client
-  if (window.supabase && typeof window.supabase.createClient === 'function') {
-    try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      if (supabase && typeof supabase.from === 'function') {
-        supabaseReady = true;
-        console.log('✅ Supabase initialized successfully');
-        return supabase;
-      }
-    } catch (err) {
-      console.error('Error initializing Supabase:', err.message);
-    }
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase initialized successfully');
+    // Load listings once initialized
+    loadListings();
+  } catch (err) {
+    console.error('❌ Supabase init error:', err.message);
   }
-
-  return null;
 }
 
-// Try immediate initialization
-console.log('🚀 Attempting to initialize Supabase...');
-ensureSupabaseReady();
-
-// If not ready, retry with exponential backoff
-if (!supabaseReady) {
-  console.warn('⚠️ Supabase library not ready yet, scheduling retry...');
-
-  let retryCount = 0;
-  const maxRetries = 50;
-  let retryDelay = 50;
-
-  function retryInit() {
-    if (supabaseReady) {
-      console.log('✅ Supabase ready after', retryCount, 'retries');
-      return;
-    }
-
-    if (retryCount >= maxRetries) {
-      console.error('❌ Failed to initialize Supabase after', maxRetries, 'retries');
-      return;
-    }
-
-    ensureSupabaseReady();
-
-    if (!supabaseReady) {
-      retryCount++;
-      retryDelay = Math.min(retryDelay * 1.5, 1000); // Exponential backoff, max 1s
-      setTimeout(retryInit, retryDelay);
-    }
-  }
-
-  setTimeout(retryInit, retryDelay);
-}
-
-// Periodically check and reinitialize if needed
-setInterval(() => {
-  if (!supabase || typeof supabase.from !== 'function') {
-    console.warn('⚠️ Supabase not ready, reinitializing...');
-    supabaseReady = false;
-    ensureSupabaseReady();
-  }
-}, 2000);
+// Start initialization
+initSupabase();
 
 // PII Regex Patterns for validation
 const piiPatterns = {
@@ -580,15 +533,9 @@ function generateAnonymousId() {
 return 'ID' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
 
-// Explicitly assign to window for guaranteed global access
-try {
-  window.setupSupabase = setupSupabase;
-  window.validatePII = validatePII;
-  window.generateAnonymousId = generateAnonymousId;
-  console.log('✅ Functions assigned to window successfully');
-} catch (err) {
-  console.error('❌ Error assigning functions to window:', err.message);
-}
+// Make functions global
+window.validatePII = validatePII;
+window.generateAnonymousId = generateAnonymousId;
 
 // Initialize with wrapped call
 try {
@@ -823,66 +770,33 @@ element.style.display = 'block';
 setTimeout(() => { element.style.display = 'none'; }, 3000);
 }
 
-// Load listings - use robust initialization pattern
-// Start after Supabase is definitely ready (max 5 second wait)
-setTimeout(() => {
-	console.log('🔄 Initial listings load...');
-	loadListings();
-}, 1000);
-
-// Refresh every 10 seconds with safety check
+// Refresh listings every 10 seconds
 setInterval(() => {
 	if (supabase && typeof supabase.from === 'function') {
 		loadListings();
 	}
 }, 10000);
 
-// FALLBACK: Initialize via DOMContentLoaded to ensure it runs
+// Setup tab navigation on page load
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('📄 DOMContentLoaded fired - ensuring Supabase is initialized');
-  if (!supabase || typeof supabase.from !== 'function') {
-    console.log('🔄 Initializing Supabase via DOMContentLoaded...');
-    try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.log('✅ Supabase initialized via DOMContentLoaded');
-      loadListings();
-    } catch (err) {
-      console.error('❌ DOMContentLoaded init error:', err.message);
-    }
-  } else {
-    console.log('✅ Supabase already initialized');
-  }
+	const navButtons = document.querySelectorAll('.nav-btn');
+	navButtons.forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			e.preventDefault();
+			const tab = e.target.dataset.tab;
 
-	  // Tab navigation - NOW SAFE TO ATTACH LISTENERS
-	  console.log('🔧 Attaching tab navigation listeners...');
-	  const navButtons = document.querySelectorAll('.nav-btn');
-	  console.log(`Found ${navButtons.length} nav buttons`);
+			// Remove active class from all content and buttons
+			document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+			document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-	  navButtons.forEach(btn => {
-		      btn.addEventListener('click', (e) => {
-				        e.preventDefault();
-				        const tab = e.target.dataset.tab;
-				        console.log(`Tab clicked: ${tab}`);
-
-				        // Remove active class from all content and buttons
-				        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-				        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-				        // Add active class to clicked button and corresponding content
-				        document.getElementById(tab + '-form').classList.add('active');
-				        e.target.classList.add('active');
-				        console.log(`✅ Switched to ${tab} tab`);
-			  });
-	  });
-
-	  console.log('✅ Tab navigation listeners attached successfully');
+			// Add active class to clicked button and corresponding content
+			document.getElementById(tab + '-form').classList.add('active');
+			e.target.classList.add('active');
+		});
+	});
 });
 </script>
 
-<!-- FINAL INITIALIZATION: Run immediately after page loads -->
-<script>
-(function() {
-  console.log('🚀 FINAL INIT SCRIPT RUNNING');
 
   // Wait a tiny bit for Supabase library to load
   function ensureInitialized() {
