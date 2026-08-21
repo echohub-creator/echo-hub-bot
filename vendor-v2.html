@@ -356,7 +356,7 @@ async function loadInquiries() {
 
     const { data: inquiries, error } = await supabase
       .from('inquiries')
-      .select'*')
+      .select('*')
       .eq('vendor_id', currentVendorId)
       .order('created_at', { ascending: false });
     if (error) {
