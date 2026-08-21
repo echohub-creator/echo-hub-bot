@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Product Listing - Echo Hub Vendor Portal</title>
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+body {
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f8 100%);
+background-attachment: fixed;
+min-height: 100vh;
+padding: 20px;
+animation: backgroundFade 0.8s ease-out;
+}
+@keyframes backgroundFade {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+.container {
+max-width: 900px;
+margin: 0 auto;
+background: white;
+border-radius: 16px;
+box-shadow: 0 20px 60px rgba(30, 90, 168, 0.08);
+overflow: hidden;
+animation: containerSlideIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes containerSlideIn {
+from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+to {
+  opacity: 1;
+  transform: translateY(0);
+}
+}
+header {
+background: linear-gradient(135deg, #1e5aa8 0%, #2e7bb4 100%);
+color: white;
+padding: 40px 30px;
+text-align: center;
+}
+header h1 {
+font-size: 2.5em;
+margin-bottom: 10px;
+}
+header p {
+font-size: 1.1em;
+opacity: 0.95;
+margin: 0;
+}
+.content {
+padding: 50px;
+}
+.form-section {
+margin-bottom: 35px;
+}
+.form-section h3 {
+color: #1e5aa8;
+margin-bottom: 20px;
+font-size: 1.3em;
+border-bottom: 2px solid #e1e8ed;
+padding-bottom: 10px;
+}
+.form-group {
+margin-bottom: 25px;
+}
+label {
+display: block;
+font-weight: 600;
+color: #2c3e50;
+margin-bottom: 8px;
+font-size: 0.95em;
+}
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+width: 100%;
+padding: 12px 15px;
+border: 2px solid #e1e8ed;
+border-radius: 8px;
+font-size: 1em;
+font-family: inherit;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+outline: none;
+border-color: #1e5aa8;
+box-shadow: 0 0 0 3px rgba(30, 90, 168, 0.1);
+}
+textarea {
+min-height: 120px;
+resize: vertical;
+}
+.two-column {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 20px;
+}
+.image-upload-area {
+border: 2px dashed #1e5aa8;
+border-radius: 8px;
+padding: 30px;
+text-align: center;
+background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+cursor: pointer;
+transition: all 0.3s;
+}
+.image-upload-area:hover {
+border-color: #2e7bb4;
+background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f8 100%);
+}
+.image-upload-area p {
+color: #1e5aa8;
+font-weight: 500;
+margin-bottom: 10px;
+}
+.image-upload-area small {
+color: #8a95a1;
+display: block;
+}
+#imageInput {
+display: none;
+}
+.image-preview-container {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+gap: 15px;
+margin-top: 20px;
+}
+.image-preview {
+position: relative;
+width: 120px;
+height: 120px;
+border-radius: 8px;
+overflow: hidden;
+border: 2px solid #e1e8ed;
+}
+.image-preview img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.remove-image {
+position: absolute;
+top: 5px;
+right: 5px;
+background: #c0392b;
+color: white;
+border: none;
+border-radius: 50%;
+width: 28px;
+height: 28px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 16px;
+font-weight: bold;
+transition: all 0.2s;
+}
+.remove-image:hover {
+background: #a93226;
+transform: scale(1.1);
+}
+.image-count {
+color: #8a95a1;
+font-size: 0.9em;
+margin-top: 10px;
+}
+.checkbox-group {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+input[type="checkbox"] {
+width: 20px;
+height: 20px;
+cursor: pointer;
+}
+.suggestion-input {
+display: none;
+margin-top: 15px;
+padding: 15px;
+background: #f9f9f9;
+border-left: 4px solid #1e5aa8;
+border-radius: 4px;
+}
+.suggestion-input.active {
+display: block;
+}
+button {
+background: #1e5aa8;
+color: white;
+border: none;
+padding: 12px 30px;
+border-radius: 8px;
+cursor: pointer;
+font-size: 1em;
+font-weight: 600;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:hover {
+background: #2e7bb4;
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(30, 90, 168, 0.25);
+}
+.button-group {
+display: flex;
+gap: 15px;
+margin-top: 40px;
+}
+.button-group button {
+flex: 1;
+}
+.button-group button.secondary {
+background: #8a95a1;
+}
+.button-group button.secondary:hover {
+background: #6c7680;
+}
+.error {
+color: #c0392b;
+background: #fadbd8;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+border-left: 4px solid #c0392b;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+display: none;
+}
+.success {
+color: #27ae60;
+background: #d5f4e6;
+padding: 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+border-left: 4px solid #27ae60;
+font-weight: 500;
+font-size: 14px;
+animation: slideIn 0.3s ease-out;
+display: none;
+}
+.loading {
+display: none;
+text-align: center;
+padding: 20px;
+color: #1e5aa8;
+font-weight: 500;
+}
+@keyframes slideIn {
+from { transform: translateY(-10px); opacity: 0; }
+to { transform: translateY(0); opacity: 1; }
+}
+@media (max-width: 768px) {
+header {
+padding: 30px 20px;
+}
+header h1 {
+font-size: 2em;
+}
+.content {
+padding: 30px 20px;
+}
+.two-column {
+grid-template-columns: 1fr;
+}
+.button-group {
+flex-direction: column;
+}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Create Product Listing</h1>
+<p>Post Your Products on Echo Hub</p>
+</header>
+
+<div class="content">
+<div class="error" id="errorMessage"></div>
+<div class="success" id="successMessage"></div>
+<div class="loading" id="loadingMessage">Uploading images and creating listing...</div>
+
+<form id="listingForm">
+<!-- Basic Product Information -->
+<div class="form-section">
+<h3>📦 Product Information</h3>
+
+<div class="form-group">
+<label for="title">Product Title *</label>
+<input type="text" id="title" name="title" required placeholder="e.g., Industrial Grade Steel Beams">
+</div>
+
+<div class="form-group">
+<label for="description">Description</label>
+<textarea id="description" name="description" placeholder="Describe your product, specifications, condition, quantity available, etc."></textarea>
+</div>
+
+<div class="form-group">
+<label for="price">Price (USD) *</label>
+<input type="number" id="price" name="price" required min="0.01" step="0.01" placeholder="0.00">
+</div>
+
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" id="inStock" name="inStock" checked>
+<label for="inStock" style="margin-bottom: 0;">✓ Product is In Stock</label>
+</div>
+</div>
+</div>
+
+<!-- Category Selection -->
+<div class="form-section">
+<h3>🏷️ Categorization</h3>
+
+<div class="form-group">
+<label for="category">Category *</label>
+<select id="category" name="category" required>
+<option value="">Select a category...</option>
+<option value="Electronics & Technology">Electronics & Technology</option>
+<option value="Beauty & Personal Care">Beauty & Personal Care</option>
+<option value="Health & Wellness">Health & Wellness</option>
+<option value="Fashion & Apparel">Fashion & Apparel</option>
+<option value="Home & Household">Home & Household</option>
+<option value="Toys & Entertainment">Toys & Entertainment</option>
+<option value="Sports & Outdoors">Sports & Outdoors</option>
+<option value="Food & Beverages">Food & Beverages</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="subcategory">Subcategory *</label>
+<select id="subcategory" name="subcategory" required>
+<option value="">Select category first...</option>
+</select>
+</div>
+
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" id="suggestCategory" name="suggestCategory">
+<label for="suggestCategory" style="margin-bottom: 0;">Can't find the right category?</label>
+</div>
+</div>
+
+<div class="suggestion-input" id="suggestionInput">
+<div class="form-group">
+<label for="suggestedCategory">Suggested Category</label>
+<input type="text" id="suggestedCategory" placeholder="e.g., Medical Devices">
+</div>
+<div class="form-group">
+<label for="suggestedSubcategory">Suggested Subcategory</label>
+<input type="text" id="suggestedSubcategory" placeholder="e.g., Surgical Instruments">
+</div>
+<div class="form-group">
+<label for="suggestionReason">Why should this category be added?</label>
+<textarea id="suggestionReason" placeholder="Help us understand why this category is needed..."></textarea>
+</div>
+</div>
+</div>
+
+<!-- Image Upload -->
+<div class="form-section">
+<h3>📸 Product Images (up to 5)</h3>
+
+<div class="image-upload-area" id="uploadArea">
+<p>Click to upload images or drag and drop</p>
+<small>Supported formats: JPG, PNG, WebP | Max 10MB per image</small>
+</div>
+<input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple>
+
+<div id="imagePreviewContainer" class="image-preview-container"></div>
+<div class="image-count" id="imageCount">0 images selected (max 5)</div>
+</div>
+
+<!-- Submit -->
+<div class="button-group">
+<button type="submit" class="primary">📤 Publish Listing</button>
+<button type="button" class="secondary" onclick="window.history.back()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
+
+const CATEGORY_SUBCATEGORIES = {
+  'Electronics & Technology': ['Cameras & Photography', 'Audio (Headphones, Earbuds, Mics)', 'Phone & Accessories', 'Smart Home Devices', 'Tech Accessories'],
+  'Beauty & Personal Care': ['Skincare Products', 'Hair Care & Accessories', 'Cosmetics & Makeup', 'Fragrances & Oils', 'Grooming Tools'],
+  'Health & Wellness': ['Vitamins & Supplements', 'Dental Care', 'Health Devices', 'Wellness Products'],
+  'Fashion & Apparel': ['Clothing (Men, Women, Kids)', 'Accessories & Jewelry', 'Footwear', 'Activewear'],
+  'Home & Household': ['Furniture', 'Home Décor', 'Kitchenware', 'Cleaning & Organization', 'Repair & Maintenance'],
+  'Toys & Entertainment': ['Toys & Games', 'Adult Entertainment', 'Books & Media'],
+  'Sports & Outdoors': ['Fitness Equipment', 'Sports Gear', 'Outdoor Equipment'],
+  'Food & Beverages': ['Snacks & Treats', 'Beverages', 'Specialty Foods']
+};
+
+let supabase = null;
+let vendorId = null;
+let selectedImages = [];
+
+async function initForm() {
+  let retries = 0;
+  while (!window.supabase || !window.supabase.createClient) {
+    if (retries++ > 50) {
+      showError('Failed to load Supabase library');
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  vendorId = params.get('vendor_id') || localStorage.getItem('echo_hub_vendor_id');
+  if (!vendorId) {
+    showError('Vendor ID not found. Please access this from the vendor portal.');
+    return;
+  }
+
+  setupEventListeners();
+}
+
+function setupEventListeners() {
+  const categorySelect = document.getElementById('category');
+  const subcategorySelect = document.getElementById('subcategory');
+  const uploadArea = document.getElementById('uploadArea');
+  const imageInput = document.getElementById('imageInput');
+  const suggestCheckbox = document.getElementById('suggestCategory');
+  const suggestionInput = document.getElementById('suggestionInput');
+  const form = document.getElementById('listingForm');
+
+  categorySelect.addEventListener('change', (e) => {
+    const category = e.target.value;
+    subcategorySelect.innerHTML = '<option value="">Select subcategory...</option>';
+    if (category && CATEGORY_SUBCATEGORIES[category]) {
+      CATEGORY_SUBCATEGORIES[category].forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub;
+        option.textContent = sub;
+        subcategorySelect.appendChild(option);
+      });
+    }
+  });
+
+  suggestCheckbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      suggestionInput.classList.add('active');
+    } else {
+      suggestionInput.classList.remove('active');
+    }
+  });
+
+  uploadArea.addEventListener('click', () => imageInput.click());
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#1e5aa8';
+    uploadArea.style.background = 'rgba(30, 90, 168, 0.05)';
+  });
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.borderColor = '#1e5aa8';
+    uploadArea.style.background = 'linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%)';
+  });
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#1e5aa8';
+    uploadArea.style.background = 'linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%)';
+    handleImageFiles(e.dataTransfer.files);
+  });
+
+  imageInput.addEventListener('change', (e) => {
+    handleImageFiles(e.target.files);
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitListing();
+  });
+}
+
+function handleImageFiles(files) {
+  for (let file of files) {
+    if (selectedImages.length >= 5) {
+      showError('Maximum 5 images allowed');
+      break;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showError(`Image "${file.name}" exceeds 10MB limit`);
+      continue;
+    }
+    selectedImages.push(file);
+  }
+  renderImagePreviews();
+}
+
+function renderImagePreviews() {
+  const container = document.getElementById('imagePreviewContainer');
+  container.innerHTML = '';
+
+  selectedImages.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = document.createElement('div');
+      preview.className = 'image-preview';
+      preview.innerHTML = `
+        <img src="${e.target.result}" alt="Preview ${index + 1}">
+        <button type="button" class="remove-image" onclick="removeImage(${index})">×</button>
+      `;
+      container.appendChild(preview);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('imageCount').textContent = `${selectedImages.length} image(s) selected (max 5)`;
+}
+
+function removeImage(index) {
+  selectedImages.splice(index, 1);
+  renderImagePreviews();
+}
+
+async function submitListing() {
+  const title = document.getElementById('title').value.trim();
+  const description = document.getElementById('description').value.trim();
+  const price = parseFloat(document.getElementById('price').value);
+  const category = document.getElementById('category').value;
+  const subcategory = document.getElementById('subcategory').value;
+  const inStock = document.getElementById('inStock').checked;
+  const suggestCategory = document.getElementById('suggestCategory').checked;
+
+  if (!title || !price || !category || !subcategory) {
+    showError('Please fill in all required fields');
+    return;
+  }
+
+  if (selectedImages.length === 0) {
+    showError('Please upload at least one image');
+    return;
+  }
+
+  showLoading();
+
+  try {
+    // Upload images to Supabase Storage
+    const imageUrls = [];
+    const listingId = generateUUID();
+
+    for (let i = 0; i < selectedImages.length; i++) {
+      const file = selectedImages[i];
+      const fileName = `product-images/${vendorId}/${listingId}/image_${i + 1}.${file.type.split('/')[1]}`;
+
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file);
+
+      if (error) throw new Error(`Image upload failed: ${error.message}`);
+
+      const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${fileName}`;
+      imageUrls.push(imageUrl);
+    }
+
+    // Create listing in database
+    const { error: listingError } = await supabase
+      .from('listings')
+      .insert({
+        id: listingId,
+        vendor_id: vendorId,
+        title: title,
+        description: description,
+        price: price,
+        category: category,
+        subcategory: subcategory,
+        in_stock: inStock,
+        image_urls: imageUrls
+      });
+
+    if (listingError) throw listingError;
+
+    // If vendor suggested a category, save the suggestion
+    if (suggestCategory) {
+      const suggestedCategory = document.getElementById('suggestedCategory').value.trim();
+      const suggestedSubcategory = document.getElementById('suggestedSubcategory').value.trim();
+      const suggestionReason = document.getElementById('suggestionReason').value.trim();
+
+      if (suggestedCategory && suggestedSubcategory) {
+        await supabase
+          .from('category_suggestions')
+          .insert({
+            vendor_id: vendorId,
+            suggested_category: suggestedCategory,
+            suggested_subcategory: suggestedSubcategory,
+            reason: suggestionReason
+          });
+      }
+    }
+
+    hideLoading();
+    showSuccess('Listing published successfully! Redirecting...');
+    setTimeout(() => {
+      window.location.href = `vendor-v2.html?vendor_id=${vendorId}`;
+    }, 2000);
+
+  } catch (error) {
+    hideLoading();
+    showError('Error publishing listing: ' + error.message);
+  }
+}
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+}
+
+function showSuccess(message) {
+  const successDiv = document.getElementById('successMessage');
+  successDiv.textContent = message;
+  successDiv.style.display = 'block';
+}
+
+function showLoading() {
+  document.getElementById('loadingMessage').style.display = 'block';
+}
+
+function hideLoading() {
+  document.getElementById('loadingMessage').style.display = 'none';
+}
+
+initForm().catch(err => {
+  console.error('Form initialization failed:', err);
+  showError('Failed to initialize form: ' + err.message);
+});
+</script>
+</body>
+</html>
