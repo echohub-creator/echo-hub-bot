@@ -789,8 +789,7 @@ async function submitInquiry(event) {
       .insert({
         vendor_id: vendorId,
         buyer_id: buyerId,
-        // listing_id temporarily removed due to Supabase schema cache issue
-        // Will be re-enabled after schema cache is refreshed
+        listing_id: listingId,
         inquiry: inquiryMessage,
         created_at: new Date().toISOString()
       });
