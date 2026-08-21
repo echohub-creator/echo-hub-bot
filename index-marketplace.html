@@ -98,8 +98,7 @@ font-size: 0.85em;
 font-weight: 600;
 }
 .category-item.empty-category {
-opacity: 0.6;
-}
+opacity: 1; color: #999;}
 .subcategory-item {
 padding: 10px 15px;
 margin: 5px 0 5px 15px;
@@ -646,6 +645,10 @@ function renderCategories() {
 
   Object.keys(CATEGORY_SUBCATEGORIES).forEach(category => {
     const categoryDiv = document.createElement('div');
+        if (!categoriesList) {
+                console.warn('Categories list element not found in DOM');
+                return;
+        }
     const subCategories = CATEGORY_SUBCATEGORIES[category];
     const totalCount = Object.values(categoryCounts[category] || {}).reduce((a, b) => a + b, 0);
     const isEmptyCategory = totalCount === 0;
