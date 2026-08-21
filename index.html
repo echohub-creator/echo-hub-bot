@@ -484,80 +484,74 @@ const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/153909772238298332
 
 // Initialize Supabase immediately
 let supabase = null;
+let supabaseReady = false;
 
-// Attempt immediate initialization (before anything else)
-if (window.supabase && typeof window.supabase.createClient === 'function') {
-  console.log('✅ Supabase library available immediately');
-  try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✅ Supabase client created immediately');
-  } catch (err) {
-    console.log('⏳ Immediate init failed, will retry:', err.message);
+// Function to ensure Supabase is initialized
+function ensureSupabaseReady() {
+  if (supabaseReady && supabase && typeof supabase.from === 'function') {
+    return supabase;
   }
+
+  // If library is available, try to create client
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      if (supabase && typeof supabase.from === 'function') {
+        supabaseReady = true;
+        console.log('✅ Supabase initialized successfully');
+        return supabase;
+      }
+    } catch (err) {
+      console.error('Error initializing Supabase:', err.message);
+    }
+  }
+
+  return null;
 }
 
-// Initialize Supabase client - robust version with validation
-function setupSupabase() {
-  // Check if library is loaded
-  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-    console.log('⏳ Supabase library not ready yet, will retry...');
-    setTimeout(setupSupabase, 100);
-    return;
-  }
+// Try immediate initialization
+console.log('🚀 Attempting to initialize Supabase...');
+ensureSupabaseReady();
 
-  try {
-    const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// If not ready, retry with exponential backoff
+if (!supabaseReady) {
+  console.warn('⚠️ Supabase library not ready yet, scheduling retry...');
 
-    // Validate the client was created properly
-    if (!newClient || typeof newClient.from !== 'function') {
-      console.error('❌ Supabase client created but missing .from method');
-      setTimeout(setupSupabase, 500);
+  let retryCount = 0;
+  const maxRetries = 50;
+  let retryDelay = 50;
+
+  function retryInit() {
+    if (supabaseReady) {
+      console.log('✅ Supabase ready after', retryCount, 'retries');
       return;
     }
 
-    supabase = newClient;
-    console.log('✅ Supabase client initialized successfully with working .from method');
-  } catch (err) {
-    console.error('❌ Failed to initialize Supabase:', err.message);
-    supabase = null;
-    setTimeout(setupSupabase, 500);
-  }
-}
-
-// Start initialization - INLINE to ensure it runs
-console.log('🚀 Starting Supabase initialization...');
-
-// Immediately initialize Supabase
-function initializeNow() {
-  if (window.supabase && typeof window.supabase.createClient === 'function') {
-    try {
-      const newClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      if (newClient && typeof newClient.from === 'function') {
-        supabase = newClient;
-        console.log('✅ Supabase initialized successfully');
-      } else {
-        console.error('❌ Client missing .from method');
-        setTimeout(initializeNow, 500);
-      }
-    } catch (err) {
-      console.error('❌ Initialization error:', err.message);
-      setTimeout(initializeNow, 500);
+    if (retryCount >= maxRetries) {
+      console.error('❌ Failed to initialize Supabase after', maxRetries, 'retries');
+      return;
     }
-  } else {
-    console.log('⏳ Supabase library not ready, will retry...');
-    setTimeout(initializeNow, 100);
+
+    ensureSupabaseReady();
+
+    if (!supabaseReady) {
+      retryCount++;
+      retryDelay = Math.min(retryDelay * 1.5, 1000); // Exponential backoff, max 1s
+      setTimeout(retryInit, retryDelay);
+    }
   }
+
+  setTimeout(retryInit, retryDelay);
 }
 
-initializeNow();
-
-// Keep retrying if not working
+// Periodically check and reinitialize if needed
 setInterval(() => {
   if (!supabase || typeof supabase.from !== 'function') {
-    console.warn('⚠️ Supabase lost or invalid, reinitializing...');
-    initializeNow();
+    console.warn('⚠️ Supabase not ready, reinitializing...');
+    supabaseReady = false;
+    ensureSupabaseReady();
   }
-}, 1000);
+}, 2000);
 
 // PII Regex Patterns for validation
 const piiPatterns = {
