@@ -1,933 +1,656 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Echo Hub Marketplace - Browse Products</title>
-<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="pragma" content="no-cache">
-<meta http-equiv="expires" content="0">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
-<style>
-* {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-}
-body {
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f8 100%);
-background-attachment: fixed;
-min-height: 100vh;
-padding: 20px;
-}
-.container {
-max-width: 1400px;
-margin: 0 auto;
-}
-header {
-background: linear-gradient(135deg, #1e5aa8 0%, #2e7bb4 100%);
-color: white;
-padding: 40px 30px;
-text-align: center;
-border-radius: 16px;
-margin-bottom: 30px;
-box-shadow: 0 20px 60px rgba(30, 90, 168, 0.08);
-}
-header h1 {
-font-size: 2.8em;
-margin-bottom: 10px;
-letter-spacing: -0.5px;
-}
-header p {
-font-size: 1.15em;
-opacity: 0.95;
-}
-.layout {
-display: grid;
-grid-template-columns: 280px 1fr;
-gap: 30px;
-}
-.categories-panel {
-background: white;
-border-radius: 16px;
-padding: 20px;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-display: flex;
-flex-direction: column;
-position: sticky;
-top: 20px;
-}
-.categories-panel::-webkit-scrollbar {
-width: 8px;
-}
-.categories-panel::-webkit-scrollbar-track {
-background: #f1f5f9;
-border-radius: 10px;
-}
-.categories-panel::-webkit-scrollbar-thumb {
-background: #cbd5e1;
-border-radius: 10px;
-}
-.categories-panel::-webkit-scrollbar-thumb:hover {
-background: #94a3b8;
-}
-.categories-panel h2 {
-color: #1e5aa8;
-margin-bottom: 12px;
-font-size: 1.3em;
-border-bottom: 2px solid #e1e8ed;
-padding-bottom: 12px;
-font-weight: 700;
-}
-.categories-hint {
-font-size: 0.8em;
-color: #64748b;
-margin-bottom: 10px;
-padding: 6px 10px;
-background: #f0f9ff;
-border-left: 3px solid #1e5aa8;
-border-radius: 4px;
-display: flex;
-align-items: center;
-gap: 6px;
-font-style: italic;
-flex-shrink: 0;
-}
-.categories-hint::before {
-content: "↓";
-display: inline-block;
-animation: bounce 2s infinite;
-font-weight: bold;
-color: #1e5aa8;
-}
-#categoriesList {
-flex: 1;
-overflow-y: auto;
-min-height: 0;
-}
-@keyframes bounce {
-0%, 100% { transform: translateY(0); }
-50% { transform: translateY(3px); }
-}
-.category-item {
-padding: 12px 15px;
-margin-bottom: 8px;
-border-radius: 8px;
-cursor: pointer;
-transition: all 0.3s;
-background: #fafbfc;
-border-left: 3px solid transparent;
-}
-.category-item:hover {
-background: #e8f0f8;
-border-left-color: #1e5aa8;
-}
-.category-item.active {
-background: #e8f0f8;
-border-left-color: #1e5aa8;
-font-weight: 600;
-color: #1e5aa8;
-}
-.category-label {
-flex: 1;
-}
-.category-count {
-background: #1e5aa8;
-color: white;
-padding: 2px 8px;
-border-radius: 12px;
-font-size: 0.85em;
-font-weight: 600;
-}
-.category-item.empty-category {
-opacity: 1;
-color: #999;
-}
-.subcategory-item {
-padding: 10px 15px;
-margin: 5px 0 5px 15px;
-border-radius: 6px;
-cursor: pointer;
-font-size: 0.95em;
-transition: all 0.3s;
-background: #f5f7fa;
-border-left: 2px solid transparent;
-display: none;
-}
-.subcategory-item.show {
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-.subcategory-item:hover {
-background: #e1e8ed;
-border-left-color: #1e5aa8;
-}
-.subcategory-item.active {
-background: #d5e8f7;
-border-left-color: #1e5aa8;
-font-weight: 600;
-color: #1e5aa8;
-}
-.subcategory-count {
-color: #8a95a1;
-font-size: 0.9em;
-background: transparent;
-padding: 0;
-}
-.products-section {
-background: white;
-border-radius: 16px;
-padding: 30px;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-.products-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 30px;
-border-bottom: 2px solid #e1e8ed;
-padding-bottom: 15px;
-}
-.products-header h2 {
-color: #1e5aa8;
-font-size: 1.6em;
-font-weight: 700;
-}
-.sort-controls {
-display: flex;
-gap: 10px;
-align-items: center;
-}
-.sort-controls label {
-color: #2c3e50;
-font-weight: 500;
-font-size: 0.95em;
-margin: 0;
-}
-.sort-controls select {
-padding: 8px 12px;
-border: 1px solid #e1e8ed;
-border-radius: 6px;
-font-size: 0.95em;
-background: white;
-cursor: pointer;
-transition: all 0.3s;
-}
-.sort-controls select:hover {
-border-color: #1e5aa8;
-}
-.sort-controls select:focus {
-outline: none;
-border-color: #1e5aa8;
-box-shadow: 0 0 0 3px rgba(30, 90, 168, 0.1);
-}
-.product-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-gap: 25px;
-}
-.product-card {
-background: white;
-border: 1px solid #e1e8ed;
-border-radius: 12px;
-overflow: hidden;
-transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-.product-card:hover {
-transform: translateY(-8px);
-box-shadow: 0 12px 28px rgba(30, 90, 168, 0.15);
-border-color: #1e5aa8;
-}
-.product-image {
-width: 100%;
-height: 200px;
-background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
-display: flex;
-align-items: center;
-justify-content: center;
-overflow: hidden;
-position: relative;
-}
-.product-image img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-.image-count {
-position: absolute;
-bottom: 10px;
-right: 10px;
-background: rgba(30, 90, 168, 0.9);
-color: white;
-padding: 4px 8px;
-border-radius: 4px;
-font-size: 0.85em;
-font-weight: 600;
-}
-.product-info {
-padding: 20px;
-}
-.product-title {
-font-weight: 700;
-color: #2c3e50;
-margin-bottom: 8px;
-font-size: 1.1em;
-min-height: 2.2em;
-overflow: hidden;
-display: -webkit-box;
--webkit-line-clamp: 2;
--webkit-box-orient: vertical;
-}
-.product-meta {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 12px;
-font-size: 0.9em;
-}
-.product-category {
-color: #8a95a1;
-font-size: 0.85em;
-}
-.product-price {
-color: #27ae60;
-font-weight: 700;
-font-size: 1.35em;
-}
-.vendor-info {
-background: #f9f9f9;
-padding: 12px;
-border-radius: 6px;
-margin-bottom: 15px;
-font-size: 0.9em;
-}
-.vendor-id {
-color: #1e5aa8;
-font-weight: 600;
-font-family: 'Courier New', monospace;
-}
-.inquire-btn {
-width: 100%;
-background: #1e5aa8;
-color: white;
-border: none;
-padding: 12px;
-border-radius: 8px;
-cursor: pointer;
-font-weight: 600;
-font-size: 0.95em;
-transition: all 0.3s;
-}
-.inquire-btn:hover {
-background: #2e7bb4;
-transform: translateY(-2px);
-box-shadow: 0 4px 12px rgba(30, 90, 168, 0.25);
-}
-.empty-state {
-text-align: center;
-padding: 60px 30px;
-color: #8a95a1;
-}
-.empty-icon {
-font-size: 48px;
-margin-bottom: 15px;
-}
-.empty-state p {
-font-size: 1.1em;
-margin-bottom: 10px;
-}
-.loading {
-text-align: center;
-padding: 40px;
-color: #1e5aa8;
-font-size: 1.1em;
-font-weight: 500;
-}
-.error {
-background: #fadbd8;
-color: #c0392b;
-padding: 16px;
-border-radius: 10px;
-border-left: 4px solid #c0392b;
-margin-bottom: 20px;
-display: none;
-}
-.success {
-background: #d5f4e6;
-color: #27ae60;
-padding: 16px;
-border-radius: 10px;
-border-left: 4px solid #27ae60;
-margin-bottom: 20px;
-display: none;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Hub Marketplace - Browse Products</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-/* Inquiry Modal */
-.modal {
-display: none;
-position: fixed;
-z-index: 1000;
-left: 0;
-top: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.5);
-}
-.modal.active {
-display: flex;
-align-items: center;
-justify-content: center;
-}
-.modal-content {
-background-color: white;
-padding: 40px;
-border-radius: 16px;
-max-width: 600px;
-width: 90%;
-max-height: 85vh;
-overflow-y: auto;
-box-shadow: 0 20px 60px rgba(30, 90, 168, 0.2);
-animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes slideUp {
-from {
-  opacity: 0;
-  transform: translateY(30px);
-}
-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-}
-.modal-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 25px;
-border-bottom: 2px solid #e1e8ed;
-padding-bottom: 15px;
-}
-.modal-header h2 {
-color: #1e5aa8;
-font-size: 1.5em;
-}
-.close-btn {
-background: none;
-border: none;
-font-size: 28px;
-cursor: pointer;
-color: #8a95a1;
-transition: color 0.3s;
-}
-.close-btn:hover {
-color: #1e5aa8;
-}
-.form-group {
-margin-bottom: 20px;
-}
-.form-group label {
-display: block;
-font-weight: 600;
-color: #2c3e50;
-margin-bottom: 8px;
-font-size: 0.95em;
-}
-.form-group input,
-.form-group textarea {
-width: 100%;
-padding: 12px 15px;
-border: 1px solid #e1e8ed;
-border-radius: 8px;
-font-size: 1em;
-font-family: inherit;
-transition: all 0.3s;
-}
-.form-group input:focus,
-.form-group textarea:focus {
-outline: none;
-border-color: #1e5aa8;
-box-shadow: 0 0 0 3px rgba(30, 90, 168, 0.1);
-}
-.form-group textarea {
-min-height: 120px;
-resize: vertical;
-}
-.form-group input[readonly] {
-background: #f5f7fa;
-cursor: not-allowed;
-}
-.form-group small {
-color: #8a95a1;
-display: block;
-margin-top: 5px;
-}
-.modal-buttons {
-display: flex;
-gap: 10px;
-margin-top: 30px;
-}
-.modal-buttons button {
-flex: 1;
-padding: 12px;
-border: none;
-border-radius: 8px;
-font-weight: 600;
-cursor: pointer;
-font-size: 1em;
-transition: all 0.3s;
-}
-.modal-buttons button.submit {
-background: #1e5aa8;
-color: white;
-}
-.modal-buttons button.submit:hover {
-background: #2e7bb4;
-transform: translateY(-2px);
-}
-.modal-buttons button.cancel {
-background: #e1e8ed;
-color: #2c3e50;
-}
-.modal-buttons button.cancel:hover {
-background: #d5dce2;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
 
-@media (max-width: 768px) {
-.layout {
-grid-template-columns: 1fr;
-}
-.categories-panel {
-max-height: 240px;
-position: relative;
-top: auto;
-}
-header h1 {
-font-size: 2em;
-}
-.product-grid {
-grid-template-columns: 1fr;
-}
-.modal-content {
-padding: 25px;
-}
-.products-header {
-flex-direction: column;
-align-items: flex-start;
-gap: 15px;
-}
-.sort-controls {
-width: 100%;
-}
-.sort-controls select {
-width: 100%;
-}
-}
-</style>
+        /* ===== LOGIN MODAL ===== */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f5f7fa;
+        }
+
+        .login-modal {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-modal h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .login-modal p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #1e5aa8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #154490;
+        }
+
+        .login-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* ===== MARKETPLACE ===== */
+        header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .tagline {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f0f0f0;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .logout-button {
+            margin-left: 15px;
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .logout-button:hover {
+            background-color: #c0392b;
+        }
+
+        .categories-section {
+            padding: 20px;
+        }
+
+        .categories-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .category-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .category-tag {
+            background-color: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.3s;
+        }
+
+        .category-tag:hover {
+            background-color: #1e5aa8;
+            color: white;
+        }
+
+        .products-section {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .products-header h2 {
+            color: #333;
+        }
+
+        .sort-select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .product-details {
+            padding: 15px;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .product-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .product-vendor {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .inquiry-button {
+            width: 100%;
+            padding: 10px;
+            background-color: #1e5aa8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .inquiry-button:hover {
+            background-color: #154490;
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-button {
+            padding: 12px;
+            background-color: #1e5aa8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .modal-button:hover {
+            background-color: #154490;
+        }
+
+        .modal-button.cancel {
+            background-color: #999;
+        }
+
+        .modal-button.cancel:hover {
+            background-color: #777;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-<header>
-<h1>Echo Hub</h1>
-<p>Where Serious Buyers Meet Serious Sellers</p>
-</header>
+    <!-- LOGIN MODAL -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-modal">
+            <h1>🔐 Echo Hub</h1>
+            <p>Enter your email or Seller ID to access the marketplace</p>
 
-<div class="error" id="errorMessage"></div>
-<div class="success" id="successMessage"></div>
+            <div class="form-group">
+                <label for="loginInput">Email or Seller ID</label>
+                <input
+                    type="text"
+                    id="loginInput"
+                    placeholder="you@example.com or SELLER-00001"
+                    autocomplete="off"
+                >
+            </div>
 
-<div class="layout">
-<!-- Categories Sidebar -->
-<div class="categories-panel">
-<h2>🏷️ Categories</h2>
-<div class="categories-hint">Scroll to explore all categories</div>
-<div id="categoriesList"></div>
-</div>
+            <button class="login-button" id="loginBtn">Request Access Link</button>
 
-<!-- Products Section -->
-<div class="products-section">
-<div class="products-header">
-<h2 id="productsTitle">All Products</h2>
-<div class="sort-controls">
-<label for="sortSelect">Sort by:</label>
-<select id="sortSelect">
-<option value="newest">Newest First</option>
-<option value="price-low">Price: Low to High</option>
-<option value="price-high">Price: High to Low</option>
-</select>
-</div>
-</div>
-
-<div id="productsList" class="product-grid">
-<div class="loading">Loading products...</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<!-- Inquiry Modal -->
-<div id="inquiryModal" class="modal">
-<div class="modal-content">
-<div class="modal-header">
-<h2>📬 Send Inquiry</h2>
-<button class="close-btn" onclick="closeInquiryModal()">×</button>
-</div>
-
-<form id="inquiryForm" onsubmit="submitInquiry(event)">
-<div class="form-group">
-<label for="vendorId">Vendor ID</label>
-<input type="text" id="vendorId" readonly>
-<small>This vendor's unique identifier</small>
-</div>
-
-<div class="form-group">
-<label for="productTitle">Product</label>
-<input type="text" id="productTitle" readonly>
-<small>The product you're inquiring about</small>
-</div>
-
-<div class="form-group">
-<label for="listingId">Listing ID</label>
-<input type="text" id="listingId" readonly>
-<small>Reference ID for this listing</small>
-</div>
-
-<div class="form-group">
-<label for="buyerId">Your Buyer ID *</label>
-<input type="text" id="buyerId" required placeholder="Enter your buyer ID">
-<small>Create a new ID or use an existing one for repeat purchases</small>
-</div>
-
-<div class="form-group">
-<label for="inquiryMessage">Your Message *</label>
-<textarea id="inquiryMessage" required placeholder="Ask about specifications, pricing, quantity, availability, delivery terms, or anything else..."></textarea>
-<small>Be specific about your needs</small>
-</div>
-
-<div class="modal-buttons">
-<button type="submit" class="submit">📤 Send Inquiry</button>
-<button type="button" class="cancel" onclick="closeInquiryModal()">Cancel</button>
-</div>
-</form>
-</div>
-</div>
-
-<script>
-const SUPABASE_URL = 'https://egrnqtvpptkvvnckjzfj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_n71HMLVbZEbYbs3auKa3mQ_Az6Mi_oi';
-
-const CATEGORY_SUBCATEGORIES = {
-  'Electronics & Technology': ['Cameras & Photography', 'Audio (Headphones, Earbuds, Mics)', 'Phone & Accessories', 'Smart Home Devices', 'Tech Accessories'],
-  'Beauty & Personal Care': ['Skincare Products', 'Hair Care & Accessories', 'Cosmetics & Makeup', 'Fragrances & Oils', 'Grooming Tools'],
-  'Health & Wellness': ['Vitamins & Supplements', 'Dental Care', 'Health Devices', 'Wellness Products'],
-  'Fashion & Apparel': ['Clothing (Men, Women, Kids)', 'Accessories & Jewelry', 'Footwear', 'Activewear'],
-  'Home & Household': ['Furniture', 'Home Décor', 'Kitchenware', 'Cleaning & Organization', 'Repair & Maintenance'],
-  'Toys & Entertainment': ['Toys & Games', 'Adult Entertainment', 'Books & Media'],
-  'Sports & Outdoors': ['Fitness Equipment', 'Sports Gear', 'Outdoor Equipment'],
-  'Food & Beverages': ['Snacks & Treats', 'Beverages', 'Specialty Foods']
-};
-
-let supabase = null;
-let allListings = [];
-let categoryCounts = {};
-let currentSelectedCategory = null;
-let currentSelectedSubcategory = null;
-let currentInquiryData = null;
-
-async function initMarketplace() {
-  try {
-    let retries = 0;
-    while (!window.supabase || !window.supabase.createClient) {
-      if (retries++ > 50) {
-        showError('Failed to load Supabase library');
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let buyerId = localStorage.getItem('echo_hub_buyer_id');
-    if (!buyerId) {
-      buyerId = 'BUYER_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      localStorage.setItem('echo_hub_buyer_id', buyerId);
-    }
-
-    console.log('About to load listings...');
-    await loadListings();
-    console.log('Listings loaded, about to render categories...');
-    renderCategories();
-    console.log('Categories rendered, about to setup event listeners...');
-    setupEventListeners();
-    console.log('Event listeners set up, marketplace ready');
-  } catch(err) {
-    console.error('Error during marketplace initialization:', err);
-    throw err;
-  }
-}
-
-async function loadListings() {
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    allListings = data || [];
-
-    categoryCounts = {};
-    allListings.forEach(listing => {
-      const cat = listing.category;
-      const subcat = listing.subcategory;
-      if (!categoryCounts[cat]) categoryCounts[cat] = {};
-      if (!categoryCounts[cat][subcat]) categoryCounts[cat][subcat] = 0;
-      categoryCounts[cat][subcat]++;
-    });
-
-    displayProducts(allListings);
-  } catch (err) {
-    showError('Error loading products: ' + err.message);
-  }
-}
-
-function sanitizeCategoryId(category) {
-  // Sanitize category name for safe use in HTML IDs
-  return category.replace(/[&\s\/]/g, '_').replace(/[^\w_-]/g, '');
-}
-
-function renderCategories() {
-  const categoriesList = document.getElementById('categoriesList');
-  if (!categoriesList) {
-    console.warn('Categories list element not found in DOM');
-    return;
-  }
-  categoriesList.innerHTML = '';
-
-  const categories = Object.keys(CATEGORY_SUBCATEGORIES);
-  console.log(`Rendering ${categories.length} categories`);
-
-  categories.forEach(category => {
-    const categoryDiv = document.createElement('div');
-    const subCategories = CATEGORY_SUBCATEGORIES[category];
-    const totalCount = Object.values(categoryCounts[category] || {}).reduce((a, b) => a + b, 0);
-    const isEmptyCategory = totalCount === 0;
-    const sanitizedId = sanitizeCategoryId(category);
-
-    categoryDiv.innerHTML = `
-      <div class="category-item ${isEmptyCategory ? 'empty-category' : ''}" onclick="toggleSubcategories('${category}')">
-        <span class="category-label">${category}</span>
-        <span class="category-count">${totalCount}</span>
-      </div>
-      <div id="subcategories-${sanitizedId}"></div>
-    `;
-
-    const subcategoriesContainer = categoryDiv.querySelector(`#subcategories-${sanitizedId}`);
-    if (!subcategoriesContainer) {
-      console.error(`Failed to find subcategories container for category: ${category}`);
-      return;
-    }
-
-    subCategories.forEach(subCategory => {
-      const count = categoryCounts[category]?.[subCategory] || 0;
-      const isEmptySub = count === 0;
-      const subDiv = document.createElement('div');
-      subDiv.className = `subcategory-item ${isEmptySub ? 'empty-category' : ''}`;
-      subDiv.onclick = (e) => {
-        e.stopPropagation();
-        selectSubcategory(category, subCategory);
-      };
-      subDiv.innerHTML = `
-        <span>${subCategory}</span>
-        <span class="subcategory-count">${count}</span>
-      `;
-      subcategoriesContainer.appendChild(subDiv);
-    });
-
-    categoriesList.appendChild(categoryDiv);
-  });
-}
-
-function toggleSubcategories(category) {
-  const sanitizedId = sanitizeCategoryId(category);
-  const container = document.getElementById(`subcategories-${sanitizedId}`);
-  if (!container) {
-    console.error(`Container not found for category: ${category}`);
-    return;
-  }
-  const items = container.querySelectorAll('.subcategory-item');
-  items.forEach(item => item.classList.toggle('show'));
-}
-
-function selectSubcategory(category, subcategory) {
-  currentSelectedCategory = category;
-  currentSelectedSubcategory = subcategory;
-
-  document.querySelectorAll('.category-item, .subcategory-item').forEach(el => {
-    el.classList.remove('active');
-  });
-
-  document.querySelectorAll('.subcategory-item').forEach(el => {
-    if (el.textContent.includes(subcategory)) {
-      el.classList.add('active');
-    }
-  });
-
-  const filtered = allListings.filter(l =>
-    l.category === category && l.subcategory === subcategory
-  );
-
-  document.getElementById('productsTitle').textContent = `${subcategory} (${filtered.length})`;
-  displayProducts(filtered);
-}
-
-function displayProducts(listings) {
-  const productsList = document.getElementById('productsList');
-
-  if (listings.length === 0) {
-    productsList.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <p>No products available yet</p>
-        <p style="font-size: 0.9em;">Check back soon or browse other categories</p>
-      </div>
-    `;
-    return;
-  }
-
-  productsList.innerHTML = listings.map(listing => {
-    const imageUrl = listing.image_urls && listing.image_urls.length > 0 ? listing.image_urls[0] : null;
-    return `
-      <div class="product-card">
-        <div class="product-image">
-          ${imageUrl ? `<img src="${imageUrl}" alt="${listing.title}">` : '<p style="color: #8a95a1;">No image</p>'}
-          ${listing.image_urls && listing.image_urls.length > 0 ? `<span class="image-count">${listing.image_urls.length} image${listing.image_urls.length > 1 ? 's' : ''}</span>` : ''}
+            <div class="status-message" id="loginStatus"></div>
         </div>
-        <div class="product-info">
-          <div class="product-title">${listing.title}</div>
-          <div class="product-meta">
-            <span class="product-category">${listing.subcategory}</span>
-            <span class="product-price">$${parseFloat(listing.price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-          </div>
-          <div class="vendor-info">
-            Vendor: <span class="vendor-id">${listing.vendor_id}</span>
-          </div>
-          <button class="inquire-btn" onclick="openInquiryModal('${listing.id}', '${listing.vendor_id}', '${listing.title.replace(/'/g, "\\'")}')">
-            📬 Send Inquiry
-          </button>
+    </div>
+
+    <!-- MARKETPLACE -->
+    <div id="marketplaceContainer" class="hidden">
+        <header>
+            <div class="user-info" id="userInfo">
+                Loading...
+                <button class="logout-button" id="logoutBtn">Logout</button>
+            </div>
+            <h1>Echo Hub</h1>
+            <p class="tagline">Where Serious Buyers Meet Serious Sellers</p>
+        </header>
+
+        <div class="categories-section">
+            <h2>🏷️ Categories</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Scroll to explore all categories</p>
+            <div class="category-scroll">
+                <div class="category-tag">Electronics & Technology</div>
+                <div class="category-tag">Beauty & Personal Care</div>
+                <div class="category-tag">Health & Wellness</div>
+                <div class="category-tag">Fashion & Apparel</div>
+                <div class="category-tag">Home & Household</div>
+                <div class="category-tag">Toys & Entertainment</div>
+                <div class="category-tag">Sports & Outdoors</div>
+                <div class="category-tag">Food & Beverages</div>
+            </div>
         </div>
-      </div>
-    `;
-  }).join('');
-}
 
-function openInquiryModal(listingId, vendorId, productTitle) {
-  currentInquiryData = {
-    listingId: listingId,
-    vendorId: vendorId,
-    productTitle: productTitle
-  };
+        <div class="products-section">
+            <div class="products-header">
+                <h2>All Products</h2>
+                <select class="sort-select">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                </select>
+            </div>
 
-  document.getElementById('vendorId').value = vendorId;
-  document.getElementById('productTitle').value = productTitle;
-  document.getElementById('listingId').value = listingId;
-  document.getElementById('buyerId').value = localStorage.getItem('echo_hub_buyer_id') || '';
-  document.getElementById('inquiryMessage').value = '';
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be loaded here -->
+                <div class="product-card">
+                    <div class="product-image">No image</div>
+                    <div class="product-details">
+                        <div class="product-name">Test Product</div>
+                        <div class="product-price">$99.99</div>
+                        <div class="product-vendor">Vendor: TEST_VENDOR_002</div>
+                        <button class="inquiry-button" data-product="Test Product" data-vendor="TEST_VENDOR_002">📬 Send Inquiry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  document.getElementById('inquiryModal').classList.add('active');
-}
+    <!-- INQUIRY MODAL -->
+    <div id="inquiryModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeInquiryModal()">&times;</span>
+            <h2>📬 Send Inquiry</h2>
+            <form class="modal-form" onsubmit="sendInquiry(event)">
+                <div>
+                    <label>Vendor ID</label>
+                    <input type="text" id="vendorId" readonly style="background: #f0f0f0;">
+                </div>
+                <div>
+                    <label>Product</label>
+                    <input type="text" id="productName" readonly style="background: #f0f0f0;">
+                </div>
+                <div>
+                    <label>Your Buyer ID *</label>
+                    <input type="text" id="buyerId" placeholder="Enter your buyer ID" required>
+                </div>
+                <div>
+                    <label>Your Message *</label>
+                    <textarea id="message" placeholder="Ask about specifications, pricing, quantity, availability, delivery terms, or anything else..." required style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px; font-family: Arial; resize: vertical;"></textarea>
+                </div>
+                <button type="submit" class="modal-button">📤 Send Inquiry</button>
+                <button type="button" class="modal-button cancel" onclick="closeInquiryModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
 
-function closeInquiryModal() {
-  document.getElementById('inquiryModal').classList.remove('active');
-  currentInquiryData = null;
-}
+    <script>
+        const AUTH_API = 'https://script.google.com/macros/s/AKfycbyLGokIMOP9z-Gqm3rpfqlq4qzxJYcPZgUfjR-1QPD9ikxFvN9PhxgCtp6dKGv1NJBGMq/usurp';
+        const SESSION_KEY = 'echo_hub_session';
+        const SESSION_TOKEN_KEY = 'echo_hub_token';
 
-async function submitInquiry(event) {
-  event.preventDefault();
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user has valid session
+            checkAuthentication();
 
-  const buyerId = document.getElementById('buyerId').value.trim();
-  const inquiryMessage = document.getElementById('inquiryMessage').value.trim();
-  const vendorId = document.getElementById('vendorId').value;
-  const listingId = document.getElementById('listingId').value;
+            // Setup event listeners
+            document.getElementById('loginBtn').addEventListener('click', requestLogin);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('loginInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') requestLogin();
+            });
 
-  if (!buyerId || !inquiryMessage) {
-    showError('Please fill in all fields');
-    return;
-  }
+            // Check for token in URL (from magic link)
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                verifyMagicLink(token);
+            }
+        });
 
-  localStorage.setItem('echo_hub_buyer_id', buyerId);
+        // ===== AUTHENTICATION FUNCTIONS =====
+        function checkAuthentication() {
+            const sessionToken = localStorage.getItem(SESSION_TOKEN_KEY);
 
-  try {
-    const { error } = await supabase
-      .from('inquiries')
-      .insert({
-        vendor_id: vendorId,
-        buyer_id: buyerId,
-        // listing_id temporarily removed due to Supabase schema cache issue
-        // Will be re-enabled after schema cache is refreshed
-        inquiry: inquiryMessage,
-        created_at: new Date().toISOString()
-      });
+            if (sessionToken) {
+                validateSessionToken(sessionToken);
+            } else {
+                showLoginScreen();
+            }
+        }
 
-    if (error) throw error;
+        function requestLogin() {
+            const emailOrId = document.getElementById('loginInput').value.trim();
+            const statusDiv = document.getElementById('loginStatus');
+            const loginBtn = document.getElementById('loginBtn');
 
-    closeInquiryModal();
-    showSuccess('✅ Inquiry sent! The vendor will respond to your buyer ID soon.');
-    setTimeout(() => {
-      document.getElementById('successMessage').style.display = 'none';
-    }, 4000);
-  } catch (err) {
-    showError('Error sending inquiry: ' + err.message);
-  }
-}
+            if (!emailOrId) {
+                showStatus('Please enter your email or Seller ID', 'error', statusDiv);
+                return;
+            }
 
-function setupEventListeners() {
-  document.getElementById('sortSelect').addEventListener('change', (e) => {
-    const sorted = [...allListings];
-    const sortValue = e.target.value;
+            loginBtn.disabled = true;
+            showStatus('Sending magic link...', 'info', statusDiv);
 
-    if (sortValue === 'price-low') {
-      sorted.sort((a, b) => a.price - b.price);
-    } else if (sortValue === 'price-high') {
-      sorted.sort((a, b) => b.price - a.price);
-    } else {
-      sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
+            fetch(AUTH_API + '?action=requestLogin&emailOrId=' + encodeURIComponent(emailOrId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('✓ Magic link sent! Check your email.', 'success', statusDiv);
+                        document.getElementById('loginInput').value = '';
+                    } else {
+                        showStatus('❌ ' + (data.message || 'Error sending link'), 'error', statusDiv);
+                    }
+                    loginBtn.disabled = false;
+                })
+                .catch(error => {
+                    showStatus('❌ Connection error. Please try again.', 'error', statusDiv);
+                    console.error('Error:', error);
+                    loginBtn.disabled = false;
+                });
+        }
 
-    const filtered = currentSelectedSubcategory
-      ? sorted.filter(l => l.category === currentSelectedCategory && l.subcategory === currentSelectedSubcategory)
-      : sorted;
+        function verifyMagicLink(token) {
+            const statusDiv = document.getElementById('loginStatus');
+            showStatus('Verifying your access link...', 'info', statusDiv);
 
-    displayProducts(filtered);
-  });
+            fetch(AUTH_API + '?action=verifyToken&token=' + encodeURIComponent(token))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Save session
+                        localStorage.setItem(SESSION_KEY, JSON.stringify({
+                            userId: data.userId,
+                            email: data.email,
+                            expiresAt: data.expiresAt
+                        }));
+                        localStorage.setItem(SESSION_TOKEN_KEY, data.sessionToken);
 
-  document.getElementById('inquiryModal').addEventListener('click', (e) => {
-    if (e.target.id === 'inquiryModal') {
-      closeInquiryModal();
-    }
-  });
-}
+                        // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
 
-function showError(message) {
-  const errorDiv = document.getElementById('errorMessage');
-  errorDiv.textContent = message;
-  errorDiv.style.display = 'block';
-  setTimeout(() => { errorDiv.style.display = 'none'; }, 5000);
-}
+                        // Show marketplace
+                        showMarketplace(data.userId, data.email);
+                    } else {
+                        showStatus('❌ ' + (data.message || 'Invalid link'), 'error', statusDiv);
+                    }
+                })
+                .catch(error => {
+                    showStatus('❌ Verification failed', 'error', statusDiv);
+                    console.error('Error:', error);
+                });
+        }
 
-function showSuccess(message) {
-  const successDiv = document.getElementById('successMessage');
-  successDiv.textContent = message;
-  successDiv.style.display = 'block';
-}
+        function validateSessionToken(sessionToken) {
+            fetch(AUTH_API + '?action=validateSession&sessionToken=' + encodeURIComponent(sessionToken))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        localStorage.setItem(SESSION_KEY, JSON.stringify({
+                            userId: data.userId,
+                            email: data.email,
+                            expiresAt: data.expiresAt
+                        }));
+                        showMarketplace(data.userId, data.email);
+                    } else {
+                        logout();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error validating session:', error);
+                    logout();
+                });
+        }
 
-initMarketplace().catch(err => {
-  console.error('Marketplace initialization failed:', err);
-  showError('Failed to initialize marketplace: ' + err.message);
-});
-</script>
+        function logout() {
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_TOKEN_KEY);
+            showLoginScreen();
+        }
+
+        // ===== UI FUNCTIONS =====
+        function showLoginScreen() {
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('marketplaceContainer').classList.add('hidden');
+        }
+
+        function showMarketplace(userId, email) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('marketplaceContainer').classList.remove('hidden');
+            document.getElementById('userInfo').innerHTML = `
+                <span>👤 ${email}</span>
+                <button class="logout-button" id="logoutBtn2">Logout</button>
+            `;
+            document.getElementById('logoutBtn2').addEventListener('click', logout);
+        }
+
+        function showStatus(message, type, element) {
+            element.textContent = message;
+            element.className = 'status-message ' + type;
+            element.style.display = 'block';
+        }
+
+        // ===== INQUIRY MODAL FUNCTIONS =====
+        function openInquiryModal(vendorId, productName) {
+            document.getElementById('vendorId').value = vendorId;
+            document.getElementById('productName').value = productName;
+            document.getElementById('inquiryModal').classList.add('active');
+        }
+
+        function closeInquiryModal() {
+            document.getElementById('inquiryModal').classList.remove('active');
+        }
+
+        function sendInquiry(event) {
+            event.preventDefault();
+            alert('Inquiry sent! Vendor will contact you soon.');
+            closeInquiryModal();
+        }
+
+        // Add event listeners to inquiry buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('inquiry-button')) {
+                const vendorId = e.target.dataset.vendor;
+                const productName = e.target.dataset.product;
+                openInquiryModal(vendorId, productName);
+            }
+        });
+    </script>
 </body>
 </html>
